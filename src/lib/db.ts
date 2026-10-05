@@ -24,19 +24,19 @@ export async function initializeDatabase() {
     const path = require('path');
     const schemaPath = path.join(process.cwd(), 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
-    
+
     // Ejecutar cada sentencia SQL del schema
     const statements = schema
       .split(';')
-      .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0);
-    
+      .map((stmt: string) => stmt.trim())
+      .filter((stmt: string) => stmt.length > 0);
+
     for (const statement of statements) {
       if (statement.trim()) {
         await db.execute({ sql: statement, args: [] });
       }
     }
-    
+
     console.log('✅ Base de datos Turso inicializada correctamente');
   } catch (error) {
     console.error('❌ Error inicializando base de datos:', error);
