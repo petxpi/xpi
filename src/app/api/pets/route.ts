@@ -31,7 +31,7 @@ export async function GET() {
     const userId = payload.userId as string;
 
     const result = await db.execute(
-      "SELECT * FROM pets WHERE owner_id = ? AND deleted_at IS NULL ORDER BY created_at DESC",
+      "SELECT * FROM pets WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC",
       [userId]
     );
 
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     const publicId = generatePublicId();
 
     await db.execute(
-      `INSERT INTO pets (id, public_id, owner_id, name, species, breed, color, sex, microchip, status, gps_enabled, created_at)
+      `INSERT INTO pets (id, public_id, user_id, name, species, breed, color, sex, microchip, status, gps_enabled, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'home', 0, datetime('now'))`,
       [petId, publicId, userId, name, species, breed || null, color || null, sex || null, microchip || null]
     );

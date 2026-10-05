@@ -38,7 +38,7 @@ export async function GET(
     }
 
     const result = await db.execute(
-      "SELECT last_known_location_lat, last_known_location_lng, last_location_updated_at FROM pets WHERE id = ? AND owner_id = ?",
+      "SELECT last_known_location_lat, last_known_location_lng, last_location_updated_at FROM pets WHERE id = ? AND user_id = ?",
       [petId, userId]
     );
 
@@ -105,7 +105,7 @@ export async function PUT(
 
     // Verificar que la mascota existe y pertenece al usuario
     const existing = await db.execute(
-      "SELECT id FROM pets WHERE id = ? AND owner_id = ?",
+      "SELECT id FROM pets WHERE id = ? AND user_id = ?",
       [petId, userId]
     );
 

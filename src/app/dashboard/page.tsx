@@ -241,6 +241,7 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message); }
   }
 
+  // 🔥 FUNCIÓN DE DIRECCIÓN OPTIMIZADA Y LIMPIA
   async function getAddress(lat: number, lng: number): Promise<string> {
     const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
     if (addressCache[key]) return addressCache[key];
@@ -252,23 +253,29 @@ export default function DashboardPage() {
       );
       if (!response.ok) return "Dirección no disponible";
       const data = await response.json();
-      let address = "";
+      let address = "Dirección no disponible";
       const addr = data.address || {};
+
+      // Lógica simplificada: Solo Calle/Vía y Barrio (sin ciudad/país para que sea limpio)
       if (addr.road) {
-        let roadName = addr.road;
-        if (addr.house_number) roadName += ` #${addr.house_number}`;
-        if (addr.suburb || addr.neighbourhood) roadName += `, ${addr.suburb || addr.neighbourhood}`;
-        if (addr.city || addr.town) roadName += `, ${addr.city || addr.town}`;
-        address = roadName;
+        address = addr.road;
+        if (addr.house_number) {
+          address += ` #${addr.house_number}`;
+        }
+        if (addr.suburb || addr.neighbourhood || addr.residential) {
+          address += `, ${addr.suburb || addr.neighbourhood || addr.residential}`;
+        }
       } else if (addr.pedestrian || addr.footway) {
-        address = `${addr.pedestrian || addr.footway}`;
+        address = addr.pedestrian || addr.footway;
         if (addr.suburb) address += `, ${addr.suburb}`;
-        if (addr.city) address += `, ${addr.city}`;
-      } else if (addr.suburb) {
-        address = `${addr.suburb}, ${addr.city || addr.town || ''}`;
-      } else {
-        address = data.display_name || "Dirección no disponible";
+      } else if (addr.suburb || addr.neighbourhood) {
+        address = addr.suburb || addr.neighbourhood;
+      } else if (data.display_name) {
+        // Fallback: tomar solo las primeras 2 partes para que no sea un texto eterno
+        const parts = data.display_name.split(',');
+        address = parts.slice(0, 2).join(',').trim();
       }
+
       setAddressCache(prev => ({ ...prev, [key]: address }));
       setLoadingAddresses(prev => ({ ...prev, [key]: false }));
       return address;
@@ -364,12 +371,12 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "🐕", cat: "🐈", bird: "", rabbit: "🐰", other: "🐾" };
+  const speciesEmoji: Record<string, string> = { dog: "🐕", cat: "🐈", bird: "🐦", rabbit: "🐰", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
-    home: { color: "bg-green-100 text-green-700", text: "En casa", emoji: "" },
-    lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "" },
+    home: { color: "bg-green-100 text-green-700", text: "En casa", emoji: "🏠" },
+    lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "🚨" },
   };
 
   function getSpeciesName(species: string): string { return speciesNames[species] || species; }
@@ -466,7 +473,7 @@ export default function DashboardPage() {
               return (
                 <div key={pet.id} className={`bg-white rounded-xl shadow p-6 ${isLost ? "border-2 border-red-500" : ""}`}>
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || ""} {pet.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || "🐾"} {pet.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${statusInfo.color}`}>{statusInfo.emoji} {statusInfo.text}</span>
                   </div>
                   {isLost && pet.lost_report && (
@@ -489,7 +496,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex gap-2 mb-2">
                       <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">📍 Ver Ubicación</button>
-                      <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700"> Ver Historial</button>
+                      <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">📜 Ver Historial</button>
                     </div>
                     <button onClick={() => openVaccines(pet)} className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700 mb-2 flex items-center justify-center gap-2">💉 Vacunas y Salud</button>
                     {isLost ? (
@@ -552,7 +559,7 @@ export default function DashboardPage() {
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
                   <option value="dog">🐕 Perro</option>
-                  <option value="cat"> Gato</option>
+                  <option value="cat">🐈 Gato</option>
                   <option value="bird">🐦 Ave</option>
                   <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
@@ -620,7 +627,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2"> Historial de Ubicaciones - {showMap?.name || "Mascota"}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">📜 Historial de Ubicaciones - {showMap?.name || "Mascota"}</h3>
               <p className="text-sm text-gray-500">Últimas {locationHistory.length} ubicaciones registradas</p>
             </div>
             <div className="space-y-3 mb-6">
@@ -670,7 +677,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/*  Modal de Vacunas */}
+      {/* Modal de Vacunas */}
       {showVaccines && selectedPetForVaccines && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
@@ -708,7 +715,7 @@ export default function DashboardPage() {
                             {vac.vet_name && (<div><p className="text-xs text-gray-500">Veterinario:</p><p className="font-semibold">{vac.vet_name}</p></div>)}
                             {vac.lot_number && (<div><p className="text-xs text-gray-500">Lote:</p><p className="font-mono text-xs">{vac.lot_number}</p></div>)}
                           </div>
-                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">️ Eliminar registro</button>
+                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">🗑️ Eliminar registro</button>
                         </div>
                       );
                     })}

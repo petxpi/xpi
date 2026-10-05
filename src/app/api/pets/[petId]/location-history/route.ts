@@ -41,7 +41,7 @@ export async function GET(
 
     // Verificar que la mascota pertenece al usuario
     const petCheck = await db.execute(
-      "SELECT id FROM pets WHERE id = ? AND owner_id = ?",
+      "SELECT id FROM pets WHERE id = ? AND user_id = ?",
       [petId, userId]
     );
 
@@ -111,7 +111,7 @@ export async function POST(
 
     // Verificar que la mascota pertenece al usuario
     const petCheck = await db.execute(
-      "SELECT id FROM pets WHERE id = ? AND owner_id = ?",
+      "SELECT id FROM pets WHERE id = ? AND user_id = ?",
       [petId, userId]
     );
 

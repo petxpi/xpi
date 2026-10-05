@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
@@ -7,14 +7,17 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.BETTER_AUTH_SECRET || "secret"
 );
 
-// PUT: Actualizar mascota completa
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ petId: string }> }
 ) {
   try {
     const resolvedParams = await params;
-    const petId = resolvedParams.id;
+    const petId = resolvedParams.petId || resolvedParams.id || (resolvedParams as any)[Object.keys(resolvedParams)[0]];
+
+    if (!petId) {
+      return NextResponse.json({ message: "ID de mascota no válido" }, { status: 400 });
+    }
 
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token");
@@ -27,10 +30,19 @@ export async function PUT(
     const userId = payload.userId as string;
 
     const body = await request.json();
-    const { name, species, breed, color, sex, microchip } = body;
+
+    // WHITELIST estricta: solo campos que existen en tu tabla pets
+    const safeData: Record<string, string | null> = {
+      name: body.name != null ? String(body.name) : null,
+      species: body.species != null ? String(body.species) : null,
+      breed: body.breed != null ? String(body.breed) : null,
+      color: body.color != null ? String(body.color) : null,
+      sex: body.sex != null ? String(body.sex) : null,
+      microchip: body.microchip != null ? String(body.microchip) : null,
+    };
 
     const existing = await db.execute(
-      "SELECT id FROM pets WHERE id = ? AND owner_id = ?",
+      "SELECT id FROM pets WHERE id = ? AND user_id = ?",
       [petId, userId]
     );
 
@@ -38,11 +50,19 @@ export async function PUT(
       return NextResponse.json({ message: "Mascota no encontrada" }, { status: 404 });
     }
 
+    // UPDATE sin updated_at, coincidiendo exactamente con tu schema actual
     await db.execute(
-      `UPDATE pets 
-       SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, updated_at = datetime('now')
-       WHERE id = ? AND owner_id = ?`,
-      [name, species, breed || null, color || null, sex || null, microchip || null, petId, userId]
+      "UPDATE pets SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ? WHERE id = ? AND user_id = ?",
+      [
+        safeData.name,
+        safeData.species,
+        safeData.breed,
+        safeData.color,
+        safeData.sex,
+        safeData.microchip,
+        petId,
+        userId
+      ]
     );
 
     return NextResponse.json({ message: "Mascota actualizada" }, { status: 200 });
@@ -52,14 +72,17 @@ export async function PUT(
   }
 }
 
-// PATCH: Actualizar estado (perdido/encontrado)
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ petId: string }> }
 ) {
   try {
     const resolvedParams = await params;
-    const petId = resolvedParams.id;
+    const petId = resolvedParams.petId || resolvedParams.id || (resolvedParams as any)[Object.keys(resolvedParams)[0]];
+
+    if (!petId) {
+      return NextResponse.json({ message: "ID de mascota no válido" }, { status: 400 });
+    }
 
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token");
@@ -72,11 +95,11 @@ export async function PATCH(
     const userId = payload.userId as string;
 
     const body = await request.json();
-    const { status, lost_report } = body;
+    const status = body.status != null ? String(body.status) : null;
+    const lostReport = body.lost_report != null ? String(body.lost_report) : null;
 
-    // Verificar que la mascota existe
     const existing = await db.execute(
-      "SELECT id FROM pets WHERE id = ? AND owner_id = ?",
+      "SELECT id FROM pets WHERE id = ? AND user_id = ?",
       [petId, userId]
     );
 
@@ -84,32 +107,29 @@ export async function PATCH(
       return NextResponse.json({ message: "Mascota no encontrada" }, { status: 404 });
     }
 
-    // Actualizar estado
     await db.execute(
-      `UPDATE pets 
-       SET status = ?, lost_report = ?, updated_at = datetime('now')
-       WHERE id = ?`,
-      [status, lost_report || null, petId]
+      "UPDATE pets SET status = ?, lost_report = ? WHERE id = ?",
+      [status, lostReport, petId]
     );
 
-    return NextResponse.json(
-      { message: `Mascota marcada como ${status}` },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: "Mascota marcada como " + status }, { status: 200 });
   } catch (error) {
     console.error("Error al actualizar estado:", error);
     return NextResponse.json({ message: "Error interno" }, { status: 500 });
   }
 }
 
-// DELETE: Eliminar mascota
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ petId: string }> }
 ) {
   try {
     const resolvedParams = await params;
-    const petId = resolvedParams.id;
+    const petId = resolvedParams.petId || resolvedParams.id || (resolvedParams as any)[Object.keys(resolvedParams)[0]];
+
+    if (!petId) {
+      return NextResponse.json({ message: "ID de mascota no válido" }, { status: 400 });
+    }
 
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token");
@@ -122,7 +142,7 @@ export async function DELETE(
     const userId = payload.userId as string;
 
     await db.execute(
-      "UPDATE pets SET deleted_at = datetime('now') WHERE id = ? AND owner_id = ?",
+      "UPDATE pets SET deleted_at = datetime('now') WHERE id = ? AND user_id = ?",
       [petId, userId]
     );
 

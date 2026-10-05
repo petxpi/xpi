@@ -7,14 +7,17 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.BETTER_AUTH_SECRET || "secret"
 );
 
-// PUT: Activar/Desactivar GPS
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ petId: string }> }
 ) {
   try {
     const resolvedParams = await params;
-    const petId = resolvedParams.id;
+    const petId = resolvedParams.petId || resolvedParams.id || (resolvedParams as any)[Object.keys(resolvedParams)[0]];
+
+    if (!petId) {
+      return NextResponse.json({ message: "ID de mascota no válido" }, { status: 400 });
+    }
 
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token");
@@ -27,17 +30,25 @@ export async function PUT(
     const userId = payload.userId as string;
 
     const body = await request.json();
-    const { enabled } = body;
+    
+    // Convertir booleano a entero (1 o 0) para SQLite
+    const enabled = body.enabled ? 1 : 0;
+
+    const existing = await db.execute(
+      "SELECT id FROM pets WHERE id = ? AND user_id = ?",
+      [petId, userId]
+    );
+
+    if (existing.rows.length === 0) {
+      return NextResponse.json({ message: "Mascota no encontrada" }, { status: 404 });
+    }
 
     await db.execute(
-      "UPDATE pets SET gps_enabled = ? WHERE id = ? AND owner_id = ?",
-      [enabled ? 1 : 0, petId, userId]
+      "UPDATE pets SET gps_enabled = ? WHERE id = ?",
+      [enabled, petId]
     );
 
-    return NextResponse.json(
-      { message: `GPS ${enabled ? "activado" : "desactivado"}` },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: "GPS actualizado" }, { status: 200 });
   } catch (error) {
     console.error("Error al cambiar GPS:", error);
     return NextResponse.json({ message: "Error interno" }, { status: 500 });

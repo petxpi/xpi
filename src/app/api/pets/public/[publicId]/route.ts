@@ -19,7 +19,7 @@ export async function GET(
         p.last_location_updated_at, p.lost_report, p.created_at,
         u.name as owner_name
        FROM pets p
-       JOIN users u ON p.owner_id = u.id
+       JOIN users u ON p.user_id = u.id
        WHERE p.public_id = ? AND p.deleted_at IS NULL`,
       [publicId]
     );

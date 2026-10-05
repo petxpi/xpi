@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { SignJWT } from "jose";
+import bcrypt from "bcryptjs";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.BETTER_AUTH_SECRET || "secret"
@@ -11,16 +12,15 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password } = body;
 
-    console.log("🔐 Intentando login:", email);
+    console.log(" Intentando login:", email);
 
-    // Buscar usuario
     const result = await db.execute(
-      "SELECT id, name, email, password_hash FROM users WHERE email = ?",
+      "SELECT id, name, email, password FROM users WHERE email = ?",
       [email]
     );
 
     if (result.rows.length === 0) {
-      console.log("❌ Usuario no encontrado");
+      console.log(" Usuario no encontrado");
       return NextResponse.json(
         { message: "Credenciales inválidas" },
         { status: 401 }
@@ -29,16 +29,16 @@ export async function POST(request: Request) {
 
     const user = result.rows[0] as any;
 
-    // Verificar contraseña (comparación directa porque la guardamos en texto plano)
-    if (user.password_hash !== password) {
-      console.log("❌ Contraseña incorrecta. DB:", user.password_hash, "Input:", password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      console.log("❌ Contraseña incorrecta");
       return NextResponse.json(
         { message: "Credenciales inválidas" },
         { status: 401 }
       );
     }
 
-    // Crear token JWT
     const token = await new SignJWT({ userId: user.id, email: user.email })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("7d")
@@ -47,17 +47,16 @@ export async function POST(request: Request) {
     console.log("✅ Login exitoso:", user.email);
 
     const response = NextResponse.json(
-      { 
-        message: "Login exitoso", 
-        user: { id: user.id, name: user.name, email: user.email } 
+      {
+        message: "Login exitoso",
+        user: { id: user.id, name: user.name, email: user.email }
       },
       { status: 200 }
     );
 
-    // Set cookie
     response.cookies.set("auth-token", token, {
       httpOnly: true,
-      maxAge: 60 * 60 * 24 * 7, // 7 días
+      maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
 
