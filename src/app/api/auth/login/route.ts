@@ -12,15 +12,27 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password } = body;
 
-    console.log(" Intentando login:", email);
+    console.log("🔐 Intentando login con email:", email);
+    console.log("📊 Variables de entorno:");
+    console.log("  TURSO_DATABASE_URL:", process.env.TURSO_DATABASE_URL ? "✅ Configurada" : "❌ FALTA");
+    console.log("  TURSO_AUTH_TOKEN:", process.env.TURSO_AUTH_TOKEN ? "✅ Configurada" : "❌ FALTA");
+    console.log("  BETTER_AUTH_SECRET:", process.env.BETTER_AUTH_SECRET ? "✅ Configurada" : "❌ FALTA");
 
+    // Verificar que la conexión a la base de datos funcione
+    console.log("🔌 Probando conexión a la base de datos...");
+    const testQuery = await db.execute("SELECT 1 as test");
+    console.log("✅ Conexión a BD exitosa:", testQuery);
+
+    console.log("🔍 Buscando usuario en la base de datos...");
     const result = await db.execute(
       "SELECT id, name, email, password FROM users WHERE email = ?",
       [email]
     );
 
+    console.log(" Resultado de la consulta:", result.rows.length, "filas encontradas");
+
     if (result.rows.length === 0) {
-      console.log(" Usuario no encontrado");
+      console.log(" Usuario no encontrado con email:", email);
       return NextResponse.json(
         { message: "Credenciales inválidas" },
         { status: 401 }
@@ -28,23 +40,27 @@ export async function POST(request: Request) {
     }
 
     const user = result.rows[0] as any;
+    console.log("✅ Usuario encontrado:", user.email);
 
+    console.log("🔑 Verificando contraseña...");
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      console.log("❌ Contraseña incorrecta");
+      console.log("❌ Contraseña incorrecta para:", user.email);
       return NextResponse.json(
         { message: "Credenciales inválidas" },
         { status: 401 }
       );
     }
 
+    console.log("✅ Contraseña válida, generando token...");
+
     const token = await new SignJWT({ userId: user.id, email: user.email })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("7d")
       .sign(JWT_SECRET);
 
-    console.log("✅ Login exitoso:", user.email);
+    console.log("✅ Token generado exitosamente");
 
     const response = NextResponse.json(
       {
@@ -60,11 +76,15 @@ export async function POST(request: Request) {
       path: "/",
     });
 
+    console.log("✅ Login completado exitosamente para:", user.email);
+
     return response;
-  } catch (error) {
-    console.error("❌ Error en login:", error);
+  } catch (error: any) {
+    console.error("❌ ERROR EN LOGIN:", error);
+    console.error("❌ Mensaje de error:", error.message);
+    console.error("❌ Stack trace:", error.stack);
     return NextResponse.json(
-      { message: "Error interno del servidor" },
+      { message: "Error interno del servidor: " + error.message },
       { status: 500 }
     );
   }
