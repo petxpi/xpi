@@ -46,7 +46,7 @@ export async function GET(
 }
 
 // ==========================================
-// ACTUALIZAR mascota (CORREGIDO)
+// ACTUALIZAR mascota (CORREGIDO - sin updated_at)
 // ==========================================
 export async function PUT(
   request: Request,
@@ -67,7 +67,7 @@ export async function PUT(
 
     await db.execute(
       `UPDATE pets 
-       SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, status = ?, updated_at = datetime('now')
+       SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, status = ?
        WHERE id = ?`,
       [name, species, breed, color, sex, microchip || "", status || "home", petId]
     );
