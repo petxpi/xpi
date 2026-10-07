@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// ✅ INICIALIZACIÓN SEGURA: Solo crea la instancia si la clave existe
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(request: Request) {
   try {
@@ -31,9 +32,9 @@ export async function POST(request: Request) {
 
     // 4. Obtener información del dueño para notificar
     const petResult = await db.execute(
-      `SELECT p.id, p.name as pet_name, u.email as owner_email, u.name as owner_name 
-       FROM pets p 
-       JOIN users u ON p.user_id = u.id 
+      `SELECT p.id, p.name as pet_name, u.email as owner_email, u.name as owner_name
+       FROM pets p
+       JOIN users u ON p.user_id = u.id
        WHERE p.id = ?`,
       [petId]
     );
@@ -41,8 +42,8 @@ export async function POST(request: Request) {
     if (petResult.rows.length > 0) {
       const pet = petResult.rows[0] as any;
 
-      // 5. Enviar email al dueño (si está configurado Resend)
-      if (process.env.RESEND_API_KEY) {
+      // 5. Enviar email al dueño (SOLO si Resend está configurado correctamente)
+      if (resend && process.env.RESEND_API_KEY) {
         await resend.emails.send({
           from: "XpiPet <onboarding@resend.dev>",
           to: pet.owner_email,
@@ -64,6 +65,8 @@ export async function POST(request: Request) {
           `,
         });
         console.log("✅ Email de notificación enviado al dueño:", pet.owner_email);
+      } else {
+        console.log("⚠️ RESEND_API_KEY no configurada. El reporte se guardó, pero no se envió email.");
       }
     }
 
