@@ -46,7 +46,7 @@ export async function GET(
 }
 
 // ==========================================
-// ACTUALIZAR mascota
+// ACTUALIZAR mascota (CORREGIDO)
 // ==========================================
 export async function PUT(
   request: Request,
@@ -63,13 +63,13 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, species, breed, color, sex, status } = body;
+    const { name, species, breed, color, sex, microchip, status } = body;
 
     await db.execute(
       `UPDATE pets 
-       SET name = ?, species = ?, breed = ?, color = ?, sex = ?, status = ?, updated_at = datetime('now')
+       SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, status = ?, updated_at = datetime('now')
        WHERE id = ?`,
-      [name, species, breed, color, sex, status, petId]
+      [name, species, breed, color, sex, microchip || "", status || "home", petId]
     );
 
     return NextResponse.json(
