@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import cloudinary from "@/lib/cloudinary";
 
 export async function POST(request: Request) {
   try {
@@ -12,41 +13,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validar que sea imagen
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json(
-        { message: "El archivo debe ser una imagen" },
-        { status: 400 }
-      );
-    }
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64String = buffer.toString("base64");
+    const dataUri = `data:${file.type};base64,${base64String}`;
 
-    // Validar tamaño (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json(
-        { message: "La imagen no debe superar 5MB" },
-        { status: 400 }
-      );
-    }
-
-    // Convertir imagen a base64 para almacenarla temporalmente
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const base64 = buffer.toString("base64");
-    const dataUrl = `data:${file.type};base64,${base64}`;
-
-    // En producción, aquí subirías a un servicio como AWS S3, Cloudinary, etc.
-    // Por ahora, devolvemos el base64 directamente para que se incluya en el mensaje
-    
-    return NextResponse.json({
-      success: true,
-      url: dataUrl,
-      size: file.size,
-      type: file.type,
+    const result = await cloudinary.uploader.upload(dataUri, {
+      folder: "xpipet/mascotas",
+      resource_type: "auto",
+      transformation: [
+        { width: 800, height: 800, crop: "limit" },
+        { quality: "auto", fetch_format: "auto" }
+      ]
     });
-  } catch (error) {
-    console.error("Error al subir imagen:", error);
+
     return NextResponse.json(
-      { message: "Error interno al subir imagen" },
+      { 
+        url: result.secure_url,
+        public_id: result.public_id
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("❌ Error al subir imagen:", error);
+    return NextResponse.json(
+      { message: "Error al subir imagen: " + error.message },
       { status: 500 }
     );
   }

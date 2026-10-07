@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const [showLostModal, setShowLostModal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false); // NUEVO: Estado para la subida de fotos
   const [formData, setFormData] = useState({
     name: "",
     species: "",
@@ -41,6 +42,7 @@ export default function DashboardPage() {
     color: "",
     sex: "",
     microchip: "",
+    photo: "", // NUEVO: Campo para la URL de la foto
   });
 
   useEffect(() => {
@@ -73,6 +75,32 @@ export default function DashboardPage() {
     }
   }
 
+  // NUEVO: Función para subir la foto a Cloudinary
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploading(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
+      
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataUpload,
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      
+      setFormData({ ...formData, photo: data.url });
+    } catch (err: any) {
+      alert("Error al subir foto: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleCreatePet(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -86,7 +114,7 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error(data.message || "Error al crear mascota");
       alert(`✅ Mascota creada! Código: ${data.publicId}`);
       setShowForm(false);
-      setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "" });
+      setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "", photo: "" });
       loadPets();
     } catch (err: any) {
       setError(err.message);
@@ -107,7 +135,7 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error(data.message || "Error al actualizar mascota");
       alert("✅ Mascota actualizada!");
       setEditingPet(null);
-      setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "" });
+      setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "", photo: "" });
       loadPets();
     } catch (err: any) {
       setError(err.message);
@@ -166,12 +194,13 @@ export default function DashboardPage() {
       color: pet.color || "",
       sex: pet.sex || "",
       microchip: pet.microchip || "",
+      photo: pet.photo_url || "",
     });
   }
 
   function closeEditModal() {
     setEditingPet(null);
-    setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "" });
+    setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "", photo: "" });
   }
 
   function downloadQR() {
@@ -370,7 +399,7 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "🐕", cat: "🐈", bird: "🐦", rabbit: "🐰", other: "🐾" };
+  const speciesEmoji: Record<string, string> = { dog: "", cat: "🐈", bird: "🐦", rabbit: "🐰", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
@@ -398,7 +427,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
             <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">
-              ⚙️ Contacto Público
+              ️ Contacto Público
             </Link>
             <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">
               👤 Mi Perfil
@@ -432,7 +461,7 @@ export default function DashboardPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Especie *</label>
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
-                  <option value="dog">🐕 Perro</option>
+                  <option value="dog"> Perro</option>
                   <option value="cat">🐈 Gato</option>
                   <option value="bird">🐦 Ave</option>
                   <option value="rabbit">🐰 Conejo</option>
@@ -459,6 +488,28 @@ export default function DashboardPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Microchip</label>
                 <input type="text" value={formData.microchip} onChange={(e) => setFormData({ ...formData, microchip: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none" />
               </div>
+              
+              {/* NUEVO: Campo de subida de foto */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">📸 Foto de la mascota</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handlePhotoUpload} 
+                  disabled={uploading}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100" 
+                />
+                {formData.photo && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <img src={formData.photo} alt="Vista previa" className="w-16 h-16 object-cover rounded-full border-2 border-purple-200" />
+                    <p className="text-xs text-green-600 font-medium">✅ Foto lista para guardar</p>
+                  </div>
+                )}
+                {uploading && (
+                  <p className="text-xs text-purple-600 mt-1 animate-pulse">⏳ Subiendo foto a la nube...</p>
+                )}
+              </div>
+
               <div className="md:col-span-2">
                 <button type="submit" className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700">Crear Mascota</button>
               </div>
@@ -485,6 +536,22 @@ export default function DashboardPage() {
                     <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || "🐾"} {pet.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${statusInfo.color}`}>{statusInfo.emoji} {statusInfo.text}</span>
                   </div>
+
+                  {/* NUEVO: Mostrar foto de la mascota en la tarjeta */}
+                  <div className="mb-4 flex justify-center">
+                    {pet.photo_url ? (
+                      <img 
+                        src={pet.photo_url} 
+                        alt={pet.name} 
+                        className="w-32 h-32 object-cover rounded-full border-4 border-purple-100 shadow-md"
+                      />
+                    ) : (
+                      <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-4xl border-4 border-gray-100">
+                        {speciesEmoji[pet.species] || ""}
+                      </div>
+                    )}
+                  </div>
+
                   {isLost && pet.lost_report && (
                     <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded mb-3 text-sm">
                       <strong>Reporte:</strong> {pet.lost_report}
@@ -504,7 +571,7 @@ export default function DashboardPage() {
                       <button onClick={() => openEditModal(pet)} className="flex-1 bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700">✏️ Editar</button>
                     </div>
                     <div className="flex gap-2 mb-2">
-                      <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">📍 Ver Ubicación</button>
+                      <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700"> Ver Ubicación</button>
                       <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">📜 Ver Historial</button>
                     </div>
                     <button onClick={() => openVaccines(pet)} className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700 mb-2 flex items-center justify-center gap-2">💉 Vacunas y Salud</button>
@@ -513,7 +580,7 @@ export default function DashboardPage() {
                     ) : (
                       <button onClick={() => setShowLostModal(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2">🚨 Reportar Perdido</button>
                     )}
-                    <button onClick={() => handleDeletePet(pet.id)} className="w-full bg-red-100 text-red-600 text-sm py-2 rounded hover:bg-red-200">🗑️ Eliminar</button>
+                    <button onClick={() => handleDeletePet(pet.id)} className="w-full bg-red-100 text-red-600 text-sm py-2 rounded hover:bg-red-200">️ Eliminar</button>
                     <div className="mt-3 pt-3 border-t">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-600">GPS:</span>
@@ -568,7 +635,7 @@ export default function DashboardPage() {
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
                   <option value="dog">🐕 Perro</option>
-                  <option value="cat">🐈 Gato</option>
+                  <option value="cat"> Gato</option>
                   <option value="bird">🐦 Ave</option>
                   <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
@@ -692,7 +759,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-800">💉 Vacunas y Salud - {selectedPetForVaccines.name}</h3>
+                <h3 className="text-2xl font-bold text-gray-800"> Vacunas y Salud - {selectedPetForVaccines.name}</h3>
                 <p className="text-sm text-gray-500">{vaccinations.length} registro(s) de salud</p>
               </div>
               <button onClick={() => { setShowVaccines(false); setShowAddVaccine(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
@@ -797,7 +864,7 @@ export default function DashboardPage() {
               <p className="text-sm text-red-800"><strong>⚠️ Importante:</strong> Esta información será visible públicamente para ayudar a encontrar a tu mascota.</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => { if (lostReport.trim()) reportLost(showLostModal.id, lostReport); else alert("Por favor describe lo sucedido"); }} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700">🚨 Reportar Perdido</button>
+              <button onClick={() => { if (lostReport.trim()) reportLost(showLostModal.id, lostReport); else alert("Por favor describe lo sucedido"); }} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700"> Reportar Perdido</button>
               <button onClick={() => { setShowLostModal(null); setLostReport(""); }} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
             </div>
           </div>

@@ -16,6 +16,7 @@
     "better-auth": "^1.7.5",
     "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",
+    "cloudinary": "^2.11.0",
     "cn": "^0.3.0",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.12",
