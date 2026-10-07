@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 
 export default function DashboardPage() {
@@ -243,7 +244,6 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message); }
   }
 
-  // 🔥 FUNCIÓN DE DIRECCIÓN OPTIMIZADA Y LIMPIA
   async function getAddress(lat: number, lng: number): Promise<string> {
     const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
     if (addressCache[key]) return addressCache[key];
@@ -258,7 +258,6 @@ export default function DashboardPage() {
       let address = "Dirección no disponible";
       const addr = data.address || {};
 
-      // Lógica simplificada: Solo Calle/Vía y Barrio (sin ciudad/país para que sea limpio)
       if (addr.road) {
         address = addr.road;
         if (addr.house_number) {
@@ -273,7 +272,6 @@ export default function DashboardPage() {
       } else if (addr.suburb || addr.neighbourhood) {
         address = addr.suburb || addr.neighbourhood;
       } else if (data.display_name) {
-        // Fallback: tomar solo las primeras 2 partes para que no sea un texto eterno
         const parts = data.display_name.split(',');
         address = parts.slice(0, 2).join(',').trim();
       }
@@ -313,7 +311,6 @@ export default function DashboardPage() {
     }
   }
 
-  // 🔥 FUNCIONES DE VACUNAS
   async function openVaccines(pet: any) {
     setSelectedPetForVaccines(pet);
     setShowVaccines(true);
@@ -399,7 +396,17 @@ export default function DashboardPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
-          <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesión</button>
+          <div className="flex items-center gap-4">
+            <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">
+              ⚙️ Contacto Público
+            </Link>
+            <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">
+              👤 Mi Perfil
+            </Link>
+            <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">
+              Cerrar Sesión
+            </button>
+          </div>
         </div>
       </header>
 
