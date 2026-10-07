@@ -2,6 +2,50 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 // ==========================================
+// ACTUALIZAR estado del GPS (Activar/Desactivar)
+// ==========================================
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ petId: string }> }
+) {
+  try {
+    const { petId } = await params;
+    const body = await request.json();
+    const { enabled } = body;
+
+    if (!petId) {
+      return NextResponse.json(
+        { message: "ID de la mascota no proporcionado" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof enabled !== "boolean") {
+      return NextResponse.json(
+        { message: "El campo 'enabled' debe ser true o false" },
+        { status: 400 }
+      );
+    }
+
+    await db.execute(
+      `UPDATE pets SET gps_enabled = ? WHERE id = ?`,
+      [enabled ? 1 : 0, petId]
+    );
+
+    return NextResponse.json(
+      { message: `GPS ${enabled ? "activado" : "desactivado"} exitosamente` },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("❌ Error al cambiar estado del GPS:", error);
+    return NextResponse.json(
+      { message: "Error interno del servidor: " + error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// ==========================================
 // ACTUALIZAR ubicación GPS de la mascota
 // ==========================================
 export async function POST(
@@ -9,9 +53,7 @@ export async function POST(
   { params }: { params: Promise<{ petId: string }> }
 ) {
   try {
-    // En Next.js 15, params es una Promesa, así que debemos esperar por ella
     const { petId } = await params;
-    
     const body = await request.json();
     const { lat, lng } = body;
 
@@ -29,9 +71,8 @@ export async function POST(
       );
     }
 
-    // Actualizar la ubicación en la base de datos
     await db.execute(
-      `UPDATE pets SET location_lat = ?, location_lng = ?, updated_at = datetime('now') WHERE id = ?`,
+      `UPDATE pets SET last_known_location_lat = ?, last_known_location_lng = ?, last_location_updated_at = datetime('now') WHERE id = ?`,
       [lat, lng, petId]
     );
 
@@ -40,7 +81,7 @@ export async function POST(
       { status: 200 }
     );
   } catch (error: any) {
-    console.error("❌ Error al actualizar GPS:", error);
+    console.error("❌ Error al actualizar ubicación GPS:", error);
     return NextResponse.json(
       { message: "Error interno del servidor: " + error.message },
       { status: 500 }
@@ -66,7 +107,7 @@ export async function GET(
     }
 
     const result = await db.execute(
-      `SELECT location_lat, location_lng FROM pets WHERE id = ?`,
+      `SELECT last_known_location_lat, last_known_location_lng, gps_enabled FROM pets WHERE id = ?`,
       [petId]
     );
 
@@ -81,8 +122,9 @@ export async function GET(
 
     return NextResponse.json(
       { 
-        lat: pet.location_lat, 
-        lng: pet.location_lng 
+        lat: pet.last_known_location_lat, 
+        lng: pet.last_known_location_lng,
+        gps_enabled: pet.gps_enabled
       },
       { status: 200 }
     );
