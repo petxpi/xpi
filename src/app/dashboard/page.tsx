@@ -398,7 +398,7 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "", cat: "🐈", bird: "🐦", rabbit: "🐰", other: "🐾" };
+  const speciesEmoji: Record<string, string> = { dog: "🐕", cat: "🐈", bird: "🐦", rabbit: "🐰", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
@@ -423,7 +423,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-600"> XpiPet Dashboard</h1>
+          <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
             <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">
               ⚙️ Contacto Público
@@ -488,7 +488,7 @@ export default function DashboardPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Especie *</label>
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
-                  <option value="dog"> Perro</option>
+                  <option value="dog">🐕 Perro</option>
                   <option value="cat">🐈 Gato</option>
                   <option value="bird">🐦 Ave</option>
                   <option value="rabbit">🐰 Conejo</option>
@@ -542,13 +542,16 @@ export default function DashboardPage() {
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${statusInfo.color}`}>{statusInfo.emoji} {statusInfo.text}</span>
                   </div>
 
+                  {/* CÍRCULO PERFECTO CON OVERFLOW-HIDDEN Y OBJECT-COVER */}
                   <div className="mb-4 flex justify-center">
                     {pet.photo_url ? (
-                      <img 
-                        src={pet.photo_url} 
-                        alt={pet.name} 
-                        className="w-32 h-32 object-cover rounded-full border-4 border-purple-100 shadow-md"
-                      />
+                      <div className="w-32 h-32 rounded-full border-4 border-purple-100 shadow-md overflow-hidden">
+                        <img 
+                          src={pet.photo_url} 
+                          alt={pet.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     ) : (
                       <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-4xl border-4 border-gray-100">
                         {speciesEmoji[pet.species] || "🐾"}
@@ -563,7 +566,7 @@ export default function DashboardPage() {
                   )}
                   <div className="space-y-1 text-sm text-gray-600">
                     <p>🐾 Especie: {getSpeciesName(pet.species)}</p>
-                    {pet.breed && <p> Raza: {pet.breed}</p>}
+                    {pet.breed && <p>🦴 Raza: {pet.breed}</p>}
                     {pet.color && <p>🎨 Color: {pet.color}</p>}
                     {pet.sex && <p>⚧ Sexo: {getSexName(pet.sex)}</p>}
                   </div>
@@ -601,6 +604,7 @@ export default function DashboardPage() {
         )}
       </main>
 
+      {/* Modal QR */}
       {selectedPet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
@@ -620,6 +624,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Modal Editar */}
       {editingPet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -636,10 +641,10 @@ export default function DashboardPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Especie *</label>
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
-                  <option value="dog"> Perro</option>
+                  <option value="dog">🐕 Perro</option>
                   <option value="cat">🐈 Gato</option>
                   <option value="bird">🐦 Ave</option>
-                  <option value="rabbit"> Conejo</option>
+                  <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
                 </select>
               </div>
@@ -672,6 +677,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Modal Mapa */}
       {showMap && !showHistory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full">
@@ -699,6 +705,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Modal Historial */}
       {showHistory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -753,6 +760,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Modal de Vacunas */}
       {showVaccines && selectedPetForVaccines && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
@@ -846,6 +854,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Modal Reportar Perdido */}
       {showLostModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full">

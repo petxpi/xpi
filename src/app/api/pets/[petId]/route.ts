@@ -1,9 +1,6 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-// ==========================================
-// OBTENER mascota por ID
-// ==========================================
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ petId: string }> }
@@ -45,9 +42,6 @@ export async function GET(
   }
 }
 
-// ==========================================
-// ACTUALIZAR mascota (CORREGIDO - sin updated_at)
-// ==========================================
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ petId: string }> }
@@ -63,13 +57,16 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, species, breed, color, sex, microchip, status } = body;
+    // AGREGADO: photo al destructuring
+    const { name, species, breed, color, sex, microchip, status, photo } = body;
 
+    // AGREGADO: photo_url = ? en el SET
     await db.execute(
       `UPDATE pets 
-       SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, status = ?
+       SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, status = ?, photo_url = ?
        WHERE id = ?`,
-      [name, species, breed, color, sex, microchip || "", status || "home", petId]
+      // AGREGADO: photo antes de petId
+      [name, species, breed, color, sex, microchip || "", status || "home", photo || null, petId]
     );
 
     return NextResponse.json(
@@ -85,9 +82,6 @@ export async function PUT(
   }
 }
 
-// ==========================================
-// ELIMINAR mascota
-// ==========================================
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ petId: string }> }

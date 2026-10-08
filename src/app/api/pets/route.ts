@@ -7,7 +7,6 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.BETTER_AUTH_SECRET || "secret"
 );
 
-// Generar public_id único y corto (ej: XPI-A3F2K9)
 function generatePublicId(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let result = "XPI-";
@@ -17,7 +16,6 @@ function generatePublicId(): string {
   return result;
 }
 
-// GET: Listar mascotas del usuario
 export async function GET() {
   try {
     const cookieStore = await cookies();
@@ -42,7 +40,6 @@ export async function GET() {
   }
 }
 
-// POST: Crear nueva mascota
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies();
@@ -56,7 +53,8 @@ export async function POST(request: Request) {
     const userId = payload.userId as string;
 
     const body = await request.json();
-    const { name, species, breed, color, sex, microchip } = body;
+    // AGREGADO: photo al destructuring
+    const { name, species, breed, color, sex, microchip, photo } = body;
 
     if (!name || !species) {
       return NextResponse.json(
@@ -68,18 +66,20 @@ export async function POST(request: Request) {
     const petId = crypto.randomUUID();
     const publicId = generatePublicId();
 
+    // AGREGADO: photo_url en el INSERT
     await db.execute(
-      `INSERT INTO pets (id, public_id, user_id, name, species, breed, color, sex, microchip, status, gps_enabled, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'home', 0, datetime('now'))`,
-      [petId, publicId, userId, name, species, breed || null, color || null, sex || null, microchip || null]
+      `INSERT INTO pets (id, public_id, user_id, name, species, breed, color, sex, microchip, photo_url, status, gps_enabled, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'home', 0, datetime('now'))`,
+      // AGREGADO: photo al final del array
+      [petId, publicId, userId, name, species, breed || null, color || null, sex || null, microchip || null, photo || null]
     );
 
     return NextResponse.json(
       { message: "Mascota creada exitosamente", petId, publicId },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al crear mascota:", error);
-    return NextResponse.json({ message: "Error interno" }, { status: 500 });
+    return NextResponse.json({ message: "Error interno: " + error.message }, { status: 500 });
   }
 }
