@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
+import ImageCropper from "@/components/ImageCropper";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -36,6 +37,9 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadingEdit, setUploadingEdit] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string>("");
+  const [croppingForEdit, setCroppingForEdit] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     species: "",
@@ -76,14 +80,39 @@ export default function DashboardPage() {
     }
   }
 
-  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result as string);
+      setShowCropper(true);
+      setCroppingForEdit(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleEditPhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result as string);
+      setShowCropper(true);
+      setCroppingForEdit(true);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleCropComplete(croppedImage: Blob) {
+    setShowCropper(false);
     setUploading(true);
+    
     try {
       const formDataUpload = new FormData();
-      formDataUpload.append("file", file);
+      formDataUpload.append("file", croppedImage, "cropped.jpg");
       
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -101,15 +130,13 @@ export default function DashboardPage() {
     }
   }
 
-  // NUEVA: Función para subir foto en edición
-  async function handleEditPhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
+  async function handleEditCropComplete(croppedImage: Blob) {
+    setShowCropper(false);
     setUploadingEdit(true);
+    
     try {
       const formDataUpload = new FormData();
-      formDataUpload.append("file", file);
+      formDataUpload.append("file", croppedImage, "cropped.jpg");
       
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -134,7 +161,7 @@ export default function DashboardPage() {
       const response = await fetch("/api/pets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, photo_url: formData.photo }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Error al crear mascota");
@@ -155,7 +182,15 @@ export default function DashboardPage() {
       const response = await fetch(`/api/pets/${editingPet.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          species: formData.species,
+          breed: formData.breed,
+          color: formData.color,
+          sex: formData.sex,
+          microchip: formData.microchip,
+          photo_url: formData.photo,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Error al actualizar mascota");
@@ -425,12 +460,12 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "🐕", cat: "🐈", bird: "🐦", rabbit: "🐰", other: "" };
+  const speciesEmoji: Record<string, string> = { dog: "🐕", cat: "🐈", bird: "🐦", rabbit: "🐰", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
-    home: { color: "bg-green-100 text-green-700", text: "En casa", emoji: "" },
-    lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "" },
+    home: { color: "bg-green-100 text-green-700", text: "En casa", emoji: "🏠" },
+    lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "🚨" },
   };
 
   function getSpeciesName(species: string): string { return speciesNames[species] || species; }
@@ -453,7 +488,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
             <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">
-              ️ Contacto Público
+              ⚙️ Contacto Público
             </Link>
             <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">
               👤 Mi Perfil
@@ -480,19 +515,28 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold mb-4">Nueva Mascota</h3>
             <form onSubmit={handleCreatePet} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
-              {/* CAMPO DE FOTO AL PRINCIPIO - DESTACADO */}
               <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-dashed border-purple-300">
                 <label className="block text-sm font-medium text-gray-700 mb-2">📸 Foto de la mascota (opcional pero recomendado)</label>
+                {/* NUEVO: Texto de ayuda con el tamaño recomendado */}
+                <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs text-blue-800 font-medium mb-1">💡 Recomendaciones para la foto:</p>
+                  <ul className="text-xs text-blue-700 space-y-1">
+                    <li>📐 <strong>Tamaño ideal:</strong> 800 × 800 píxeles (cuadrada)</li>
+                    <li>📏 <strong>Proporción:</strong> 1:1 (cuadrada) para mejor resultado</li>
+                    <li>📦 <strong>Tamaño máximo:</strong> 10 MB</li>
+                    <li>🎯 <strong>Consejo:</strong> Toma la foto de frente a la mascota, a la altura de sus ojos</li>
+                  </ul>
+                </div>
                 <input 
                   type="file" 
                   accept="image/*" 
-                  onChange={handlePhotoUpload} 
+                  onChange={handlePhotoSelect}
                   disabled={uploading}
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" 
                 />
                 {formData.photo && (
                   <div className="mt-3 flex items-center gap-4">
-                    <div className="w-24 h-24 rounded-full border-4 border-purple-300 overflow-hidden shadow-lg">
+                    <div className="w-32 h-32 rounded-full border-4 border-purple-300 overflow-hidden shadow-lg">
                       <img src={formData.photo} alt="Vista previa" className="w-full h-full object-cover object-center" />
                     </div>
                     <div>
@@ -555,7 +599,7 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-center py-8">Cargando mascotas...</p>
         ) : pets.length === 0 ? (
           <div className="bg-white rounded-xl shadow p-12 text-center">
-            <p className="text-6xl mb-4">🐾</p>
+            <p className="text-6xl mb-4"></p>
             <p className="text-gray-600 mb-4">Aún no tienes mascotas registradas</p>
             <button onClick={() => setShowForm(true)} className="text-purple-600 font-semibold hover:underline">Agregar tu primera mascota</button>
           </div>
@@ -564,6 +608,7 @@ export default function DashboardPage() {
             {pets.map((pet: any) => {
               const statusInfo = statusConfig[pet.status] || statusConfig.home;
               const isLost = pet.status === "lost";
+              
               return (
                 <div key={pet.id} className={`bg-white rounded-xl shadow p-6 ${isLost ? "border-2 border-red-500" : ""}`}>
                   <div className="flex justify-between items-start mb-3">
@@ -571,10 +616,9 @@ export default function DashboardPage() {
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${statusInfo.color}`}>{statusInfo.emoji} {statusInfo.text}</span>
                   </div>
 
-                  {/* CÍRCULO PERFECTO CON OBJECT-CENTER */}
                   <div className="mb-4 flex justify-center">
                     {pet.photo_url ? (
-                      <div className="w-32 h-32 rounded-full border-4 border-purple-100 shadow-md overflow-hidden">
+                      <div className="w-48 h-48 rounded-full border-4 border-purple-100 shadow-md overflow-hidden">
                         <img 
                           src={pet.photo_url} 
                           alt={pet.name} 
@@ -582,7 +626,7 @@ export default function DashboardPage() {
                         />
                       </div>
                     ) : (
-                      <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-4xl border-4 border-gray-100">
+                      <div className="w-48 h-48 bg-gray-200 rounded-full flex items-center justify-center text-6xl border-4 border-gray-100">
                         {speciesEmoji[pet.species] || "🐾"}
                       </div>
                     )}
@@ -596,13 +640,13 @@ export default function DashboardPage() {
                   <div className="space-y-1 text-sm text-gray-600">
                     <p>🐾 Especie: {getSpeciesName(pet.species)}</p>
                     {pet.breed && <p>🦴 Raza: {pet.breed}</p>}
-                    {pet.color && <p>🎨 Color: {pet.color}</p>}
+                    {pet.color && <p> Color: {pet.color}</p>}
                     {pet.sex && <p>⚧ Sexo: {getSexName(pet.sex)}</p>}
                   </div>
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-xs text-gray-500 mb-3">Código QR: <span className="font-mono font-bold text-purple-600">{pet.public_id}</span></p>
                     <div className="flex gap-2 mb-2">
-                      <a href={`/pets/${pet.public_id}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-pink-600 text-white text-sm py-2 rounded hover:bg-pink-700 text-center">️ Ver Perfil</a>
+                      <a href={`/pets/${pet.public_id}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-pink-600 text-white text-sm py-2 rounded hover:bg-pink-700 text-center">👁️ Ver Perfil</a>
                       <button onClick={() => setSelectedPet(pet)} className="flex-1 bg-purple-600 text-white text-sm py-2 rounded hover:bg-purple-700">📱 Ver QR</button>
                       <button onClick={() => openEditModal(pet)} className="flex-1 bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700">✏️ Editar</button>
                     </div>
@@ -614,7 +658,7 @@ export default function DashboardPage() {
                     {isLost ? (
                       <button onClick={() => reportFound(pet.id)} className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 mb-2">✅ Marcar como Encontrado</button>
                     ) : (
-                      <button onClick={() => setShowLostModal(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2"> Reportar Perdido</button>
+                      <button onClick={() => setShowLostModal(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2">🚨 Reportar Perdido</button>
                     )}
                     <button onClick={() => handleDeletePet(pet.id)} className="w-full bg-red-100 text-red-600 text-sm py-2 rounded hover:bg-red-200">🗑️ Eliminar</button>
                     <div className="mt-3 pt-3 border-t">
@@ -633,7 +677,14 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* Modal QR */}
+      {showCropper && (
+        <ImageCropper
+          image={imageToCrop}
+          onCropComplete={croppingForEdit ? handleEditCropComplete : handleCropComplete}
+          onClose={() => setShowCropper(false)}
+        />
+      )}
+
       {selectedPet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
@@ -645,7 +696,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-xs text-gray-500 mb-6">Escanea este código para ver el perfil de {selectedPet.name}</p>
               <div className="flex gap-3">
-                <button onClick={downloadQR} className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold">️ Descargar QR</button>
+                <button onClick={downloadQR} className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold">⬇️ Descargar QR</button>
                 <button onClick={() => setSelectedPet(null)} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 font-semibold">Cerrar</button>
               </div>
             </div>
@@ -653,7 +704,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Modal Editar - AHORA CON CAMPO DE FOTO */}
       {editingPet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -663,14 +713,23 @@ export default function DashboardPage() {
             </div>
             <form onSubmit={handleUpdatePet} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
-              {/* CAMPO DE FOTO EN EDICIÓN */}
               <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border-2 border-dashed border-blue-300">
                 <label className="block text-sm font-medium text-gray-700 mb-2">📸 Cambiar foto (opcional)</label>
                 
-                {/* Mostrar foto actual si existe */}
+                {/* NUEVO: Texto de ayuda con el tamaño recomendado */}
+                <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs text-blue-800 font-medium mb-1">💡 Recomendaciones para la foto:</p>
+                  <ul className="text-xs text-blue-700 space-y-1">
+                    <li>📐 <strong>Tamaño ideal:</strong> 800 × 800 píxeles (cuadrada)</li>
+                    <li>📏 <strong>Proporción:</strong> 1:1 (cuadrada) para mejor resultado</li>
+                    <li> <strong>Tamaño máximo:</strong> 10 MB</li>
+                    <li>🎯 <strong>Consejo:</strong> Toma la foto de frente a la mascota, a la altura de sus ojos</li>
+                  </ul>
+                </div>
+
                 {formData.photo && (
                   <div className="mb-3 flex items-center gap-4">
-                    <div className="w-24 h-24 rounded-full border-4 border-blue-300 overflow-hidden shadow-lg">
+                    <div className="w-32 h-32 rounded-full border-4 border-blue-300 overflow-hidden shadow-lg">
                       <img src={formData.photo} alt="Foto actual" className="w-full h-full object-cover object-center" />
                     </div>
                     <div>
@@ -683,7 +742,7 @@ export default function DashboardPage() {
                 <input 
                   type="file" 
                   accept="image/*" 
-                  onChange={handleEditPhotoUpload} 
+                  onChange={handleEditPhotoSelect}
                   disabled={uploadingEdit}
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer" 
                 />
@@ -739,12 +798,11 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Modal Mapa */}
       {showMap && !showHistory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2"> Ubicación de {showMap.name}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">📍 Ubicación de {showMap.name}</h3>
               <p className="text-sm text-gray-500">Última actualización: {showMap.last_location_updated_at || "Nunca"}</p>
             </div>
             <div className="border-2 border-purple-200 rounded-lg overflow-hidden mb-6">
@@ -760,14 +818,13 @@ export default function DashboardPage() {
               </div>
             )}
             <div className="flex gap-3">
-              <button onClick={() => { getCurrentPosition(); if (showMap && userLocation) updatePetLocation(showMap.id, userLocation.lat, userLocation.lng); }} className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold">📡 Actualizar Ubicación</button>
+              <button onClick={() => { getCurrentPosition(); if (showMap && userLocation) updatePetLocation(showMap.id, userLocation.lat, userLocation.lng); }} className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold"> Actualizar Ubicación</button>
               <button onClick={() => setShowMap(null)} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 font-semibold">Cerrar</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Historial */}
       {showHistory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -776,7 +833,7 @@ export default function DashboardPage() {
               <p className="text-sm text-gray-500">Últimas {locationHistory.length} ubicaciones registradas</p>
             </div>
             <div className="space-y-3 mb-6">
-              <h4 className="font-semibold text-gray-700 mb-3">📍 Ubicaciones registradas:</h4>
+              <h4 className="font-semibold text-gray-700 mb-3"> Ubicaciones registradas:</h4>
               {locationHistory.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">No hay ubicaciones registradas.</p>
               ) : (
@@ -790,12 +847,12 @@ export default function DashboardPage() {
                     <div key={loc.id} className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 p-4 rounded-lg">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <p className="text-sm font-bold text-purple-700">📍 Ubicación #{locationHistory.length - index}</p>
-                          <p className="text-xs text-gray-600 font-mono mt-1"> Lat: {lat.toFixed(6)}, Lng: {lng.toFixed(6)}</p>
+                          <p className="text-sm font-bold text-purple-700"> Ubicación #{locationHistory.length - index}</p>
+                          <p className="text-xs text-gray-600 font-mono mt-1">🌐 Lat: {lat.toFixed(6)}, Lng: {lng.toFixed(6)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500">{new Date(loc.created_at || loc.recorded_at).toLocaleString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
-                          {loc.accuracy_meters && <p className="text-xs text-gray-500"> Precisión: {loc.accuracy_meters}m</p>}
+                          {loc.accuracy_meters && <p className="text-xs text-gray-500">📡 Precisión: {loc.accuracy_meters}m</p>}
                         </div>
                       </div>
                       <div className="mt-2 pt-2 border-t border-purple-100">
@@ -803,7 +860,7 @@ export default function DashboardPage() {
                           <p className="text-xs text-purple-600 italic">🔄 Obteniendo dirección...</p>
                         ) : address ? (
                           <div>
-                            <p className="text-xs text-gray-500 mb-1"> Dirección aproximada:</p>
+                            <p className="text-xs text-gray-500 mb-1">📍 Dirección aproximada:</p>
                             <p className="text-sm font-semibold text-gray-800">{address}</p>
                           </div>
                         ) : (
@@ -822,7 +879,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Modal de Vacunas */}
       {showVaccines && selectedPetForVaccines && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
@@ -907,7 +963,7 @@ export default function DashboardPage() {
                   <input type="text" value={vaccineForm.lot_number} onChange={(e) => setVaccineForm({ ...vaccineForm, lot_number: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-teal-600 focus:outline-none" placeholder="LOT-12345" />
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button type="submit" className="flex-1 bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 font-semibold">💾 Guardar vacuna</button>
+                  <button type="submit" className="flex-1 bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 font-semibold"> Guardar vacuna</button>
                   <button type="button" onClick={() => setShowAddVaccine(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
                 </div>
               </form>
@@ -916,7 +972,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Modal Reportar Perdido */}
       {showLostModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full">
@@ -930,7 +985,7 @@ export default function DashboardPage() {
               <textarea value={lostReport} onChange={(e) => setLostReport(e.target.value)} placeholder="Ej: Se escapó del parque ayer por la tarde..." rows={4} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none" />
             </div>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-red-800"><strong>⚠️ Importante:</strong> Esta información será visible públicamente para ayudar a encontrar a tu mascota.</p>
+              <p className="text-sm text-red-800"><strong>️ Importante:</strong> Esta información será visible públicamente para ayudar a encontrar a tu mascota.</p>
             </div>
             <div className="flex gap-3">
               <button onClick={() => { if (lostReport.trim()) reportLost(showLostModal.id, lostReport); else alert("Por favor describe lo sucedido"); }} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700">🚨 Reportar Perdido</button>

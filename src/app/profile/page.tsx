@@ -14,41 +14,31 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchProfile() {
       try {
-        // Obtener el token de la cookie
-        const token = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("auth-token="))
-          ?.split("=")[1];
+        // CORRECCIÓN: En lugar de leer document.cookie (que falla con HttpOnly),
+        // hacemos un fetch al backend. El navegador envía la cookie automáticamente.
+        const response = await fetch("/api/auth/me");
 
-        if (!token) {
+        if (response.status === 401) {
           router.push("/login");
           return;
         }
 
-        // Obtener datos del usuario
-        const userResponse = await fetch("/api/auth/me", {
-          headers: { Cookie: `auth-token=${token}` },
-        });
-
-        if (!userResponse.ok) {
-          router.push("/login");
-          return;
+        if (!response.ok) {
+          throw new Error("Error al obtener datos del usuario");
         }
 
-        const userData = await userResponse.json();
+        const userData = await response.json();
         setUser(userData.user);
 
         // Obtener mascotas del usuario
-        const petsResponse = await fetch("/api/pets", {
-          headers: { Cookie: `auth-token=${token}` },
-        });
-
+        const petsResponse = await fetch("/api/pets");
         if (petsResponse.ok) {
           const petsData = await petsResponse.json();
           setPets(petsData.pets || []);
         }
-      } catch (err) {
-        setError("Error al cargar el perfil");
+      } catch (err: any) {
+        console.error("Error al cargar el perfil:", err);
+        setError("Error al cargar el perfil. Por favor, inicia sesión nuevamente.");
       } finally {
         setLoading(false);
       }
@@ -57,10 +47,11 @@ export default function ProfilePage() {
     fetchProfile();
   }, [router]);
 
-  const handleLogout = () => {
-    document.cookie = "auth-token=; max-age=0; path=/";
+  // CORRECCIÓN: Mismo método de logout que el dashboard
+  function handleLogout() {
+    document.cookie = "auth-token=; path=/; max-age=0";
     router.push("/login");
-  };
+  }
 
   if (loading) {
     return (
@@ -73,10 +64,10 @@ export default function ProfilePage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg">
-          <p className="font-semibold">Error</p>
-          <p>{error}</p>
-          <Link href="/login" className="text-blue-600 hover:underline mt-2 inline-block">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg text-center">
+          <p className="font-semibold mb-2">Error</p>
+          <p className="mb-4">{error}</p>
+          <Link href="/login" className="text-blue-600 hover:underline font-medium">
             Volver al login
           </Link>
         </div>
@@ -131,7 +122,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">🐾 Mis Mascotas</h2>
             <Link
-              href="/pets/new"
+              href="/dashboard"
               className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition"
             >
               + Agregar mascota
@@ -143,18 +134,17 @@ export default function ProfilePage() {
               <p className="text-6xl mb-4">🐶</p>
               <p className="text-gray-600 mb-4">Aún no tienes mascotas registradas</p>
               <Link
-                href="/pets/new"
+                href="/dashboard"
                 className="inline-block bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition"
               >
-                Registrar mi primera mascota
+                Ir al Dashboard para registrar
               </Link>
             </div>
           ) : (
             <div className="space-y-4">
               {pets.map((pet) => (
-                <Link
+                <div
                   key={pet.id}
-                  href={`/pet/${pet.id}`}
                   className="block border border-gray-200 rounded-lg p-4 hover:border-purple-300 hover:shadow-md transition"
                 >
                   <div className="flex items-center justify-between">
@@ -176,7 +166,7 @@ export default function ProfilePage() {
                     </div>
                     <span className="text-gray-400">→</span>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}
