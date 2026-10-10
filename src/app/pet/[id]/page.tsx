@@ -153,21 +153,25 @@ export default function PublicPetPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-md mx-auto">
+      {/* CAMBIO: max-w-lg para que se vea bien en PC pero siga siendo compacto como en celular */}
+      <div className="max-w-lg mx-auto">
+        
         {/* Header de Alerta */}
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
           <p className="font-bold">🚨 ¡{contactInfo?.petName} está PERDIDO!</p>
           <p className="text-sm">Si la ves, por favor contacta al dueño.</p>
         </div>
 
-        {/* Foto de la Mascota (AHORA MUESTRA LA FOTO REAL) */}
+        {/* Foto de la Mascota (CENTRADA Y AJUSTADA) */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
           {contactInfo?.petPhotoUrl ? (
-            <img 
-              src={contactInfo.petPhotoUrl} 
-              alt={contactInfo.petName}
-              className="w-full h-64 object-cover"
-            />
+            <div className="w-full h-64 overflow-hidden bg-gray-100 flex items-center justify-center">
+              <img
+                src={contactInfo.petPhotoUrl}
+                alt={contactInfo.petName}
+                className="w-full h-full object-cover object-center"
+              />
+            </div>
           ) : (
             <div className="h-64 bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
               <span className="text-8xl">🐶</span>
@@ -201,7 +205,7 @@ export default function PublicPetPage() {
           </div>
         </div>
 
-        {/* Formulario para enviar Foto y Reporte */}
+        {/* Formulario para enviar Foto y Reporte (ESTILO ORIGINAL CONSERVADO) */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold mb-4 text-gray-800">📩 ¿La encontraste? Envía un reporte</h2>
           <p className="text-gray-600 mb-4 text-sm">
