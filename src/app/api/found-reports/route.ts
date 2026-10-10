@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Resend } from "resend";
 
-// ✅ INICIALIZACIÓN SEGURA: Solo crea la instancia si la clave existe
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(request: Request) {
@@ -20,39 +19,54 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Generar ID único
+    // 2. Buscar la mascota por public_id O id interno
+    const petResult = await db.execute(
+      `SELECT id, name, user_id FROM pets WHERE public_id = ? OR id = ?`,
+      [petId, petId]
+    );
+
+    if (petResult.rows.length === 0) {
+      return NextResponse.json(
+        { message: "Mascota no encontrada con el ID proporcionado" },
+        { status: 404 }
+      );
+    }
+
+    const pet = petResult.rows[0] as any;
+    const realPetId = pet.id;
+
+    // 3. Generar ID único
     const reportId = crypto.randomUUID();
 
-    // 3. Guardar reporte en la base de datos
+    // 4. Guardar reporte en la base de datos con el ID real
     await db.execute(
       `INSERT INTO found_reports (id, pet_id, finder_name, finder_email, finder_phone, description, photo_url, location_lat, location_lng, status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now'))`,
-      [reportId, petId, finderName, finderEmail, finderPhone, description, photoUrl, lat, lng]
+      [reportId, realPetId, finderName, finderEmail, finderPhone, description, photoUrl, lat, lng]
     );
 
-    // 4. Obtener información del dueño para notificar
-    const petResult = await db.execute(
-      `SELECT p.id, p.name as pet_name, u.email as owner_email, u.name as owner_name
-       FROM pets p
-       JOIN users u ON p.user_id = u.id
-       WHERE p.id = ?`,
-      [petId]
+    // 5. Obtener información del dueño para notificar
+    const ownerResult = await db.execute(
+      `SELECT u.email as owner_email, u.name as owner_name
+       FROM users u
+       WHERE u.id = ?`,
+      [pet.user_id]
     );
 
-    if (petResult.rows.length > 0) {
-      const pet = petResult.rows[0] as any;
+    if (ownerResult.rows.length > 0) {
+      const owner = ownerResult.rows[0] as any;
 
-      // 5. Enviar email al dueño (SOLO si Resend está configurado correctamente)
+      // 6. Enviar email al dueño
       if (resend && process.env.RESEND_API_KEY) {
         await resend.emails.send({
           from: "XpiPet <onboarding@resend.dev>",
-          to: pet.owner_email,
-          subject: `🎉 ¡Alguien encontró a ${pet.pet_name}!`,
+          to: owner.owner_email,
+          subject: `🎉 ¡Alguien encontró a ${pet.name}!`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #10b981;">¡Buenas noticias! </h2>
-              <p>Hola <strong>${pet.owner_name}</strong>,</p>
-              <p>Alguien reportó haber encontrado a <strong>${pet.pet_name}</strong>.</p>
+              <h2 style="color: #10b981;">¡Buenas noticias!</h2>
+              <p>Hola <strong>${owner.owner_name}</strong>,</p>
+              <p>Alguien reportó haber encontrado a <strong>${pet.name}</strong>.</p>
               <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <p><strong>Nombre del encontrador:</strong> ${finderName}</p>
                 <p><strong>Email:</strong> ${finderEmail}</p>
@@ -64,7 +78,7 @@ export async function POST(request: Request) {
             </div>
           `,
         });
-        console.log("✅ Email de notificación enviado al dueño:", pet.owner_email);
+        console.log("✅ Email de notificación enviado al dueño:", owner.owner_email);
       } else {
         console.log("⚠️ RESEND_API_KEY no configurada. El reporte se guardó, pero no se envió email.");
       }
