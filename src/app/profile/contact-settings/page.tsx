@@ -10,7 +10,7 @@ export default function ContactSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
-  
+
   const [settings, setSettings] = useState({
     phone: "",
     whatsapp: "",
@@ -22,14 +22,16 @@ export default function ContactSettingsPage() {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        // Aquí harías un fetch a tu API para obtener los settings actuales del usuario
-        // Por ahora, usamos valores de ejemplo
+        const response = await fetch("/api/pet-contact");
+        if (!response.ok) throw new Error("Error al cargar");
+        const data = await response.json();
+        
         setSettings({
-          phone: "",
-          whatsapp: "",
-          show_phone: false,
-          show_whatsapp: false,
-          show_email: true,
+          phone: data.phone || "",
+          whatsapp: data.whatsapp || "",
+          show_phone: data.show_phone || false,
+          show_whatsapp: data.show_whatsapp || false,
+          show_email: data.show_email !== undefined ? data.show_email : true,
         });
       } catch (err) {
         setError("Error al cargar configuración");
@@ -47,16 +49,17 @@ export default function ContactSettingsPage() {
     setSuccess("");
 
     try {
-      // Aquí harías un fetch a tu API para guardar los settings
-      // const response = await fetch("/api/user/contact-settings", {
-      //   method: "PUT",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(settings),
-      // });
-      
-      // Simulación de guardado
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const response = await fetch("/api/pet-contact", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Error al guardar");
+      }
+
       setSuccess("✅ Configuración guardada exitosamente");
     } catch (err: any) {
       setError(err.message);
@@ -87,7 +90,7 @@ export default function ContactSettingsPage() {
           </p>
         </div>
 
-        {/* Formulario de Configuración */}
+        {/* Formulario */}
         <div className="bg-white rounded-lg shadow-md p-6">
           {success && (
             <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
@@ -105,7 +108,7 @@ export default function ContactSettingsPage() {
             {/* Teléfono */}
             <div className="border border-gray-200 p-4 rounded-lg">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                📞 Número de Teléfono
+                 Número de Teléfono
               </label>
               <input
                 type="tel"
@@ -188,7 +191,7 @@ export default function ContactSettingsPage() {
         <div className="mt-6 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
           <p className="font-semibold text-sm">💡 ¿Cómo funciona?</p>
           <p className="text-sm mt-1">
-            Cuando alguien escanee el código QR de tu mascota, solo verá los botones de contacto que hayas activado aquí. 
+            Cuando alguien escanee el código QR de tu mascota, solo verá los botones de contacto que hayas activado aquí.
             Tu privacidad está protegida.
           </p>
         </div>
