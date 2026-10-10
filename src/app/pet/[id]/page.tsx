@@ -26,7 +26,7 @@ export default function PublicPetPage() {
       try {
         const response = await fetch(`/api/pet-contact?petId=${petId}`);
         const data = await response.json();
-        
+
         if (response.ok) {
           setContactInfo(data);
         } else {
@@ -53,7 +53,6 @@ export default function PublicPetPage() {
       alert("El dueño no ha configurado WhatsApp");
       return;
     }
-
     const message = `Hola, encontré a tu mascota ${contactInfo.petName}. ${formData.description || 'Me gustaría darte más detalles.'}`;
     const whatsappUrl = `https://wa.me/${contactInfo.ownerWhatsApp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -64,10 +63,8 @@ export default function PublicPetPage() {
       alert("El dueño no ha configurado email");
       return;
     }
-
     const subject = `Encontré a tu mascota ${contactInfo.petName}`;
     const body = `Hola ${contactInfo.ownerName},\n\nEncontré a tu mascota ${contactInfo.petName}.\n\n${formData.description || 'Me gustaría darte más detalles.'}\n\nMi nombre es ${formData.finderName}\nMi email: ${formData.finderEmail}\nMi teléfono: ${formData.finderPhone}`;
-    
     const emailUrl = `mailto:${contactInfo.ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = emailUrl;
   }
@@ -79,10 +76,28 @@ export default function PublicPetPage() {
     setSuccess("");
 
     try {
-      // Aquí subirías la foto a un servicio como Cloudinary
-      // Por ahora, guardamos sin foto
-      const photoUrl = null;
+      let photoUrl = null;
 
+      // 1. SUBIR LA FOTO A CLOUDINARY (si el usuario seleccionó una)
+      if (photo) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", photo);
+
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errData = await uploadResponse.json();
+          throw new Error("Error al subir la foto: " + errData.message);
+        }
+
+        const uploadData = await uploadResponse.json();
+        photoUrl = uploadData.url;
+      }
+
+      // 2. ENVIAR EL REPORTE CON LA URL DE LA FOTO
       const response = await fetch("/api/found-reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,45 +160,41 @@ export default function PublicPetPage() {
           <p className="text-sm">Si la ves, por favor contacta al dueño.</p>
         </div>
 
-        {/* Foto de la Mascota */}
+        {/* Foto de la Mascota (AHORA MUESTRA LA FOTO REAL) */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
-          <div className="h-48 bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
-            <span className="text-8xl">🐶</span>
-          </div>
+          {contactInfo?.petPhotoUrl ? (
+            <img 
+              src={contactInfo.petPhotoUrl} 
+              alt={contactInfo.petName}
+              className="w-full h-64 object-cover"
+            />
+          ) : (
+            <div className="h-64 bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+              <span className="text-8xl">🐶</span>
+            </div>
+          )}
           <div className="p-4 text-center">
             <h1 className="text-3xl font-bold text-gray-800">{contactInfo?.petName}</h1>
             <p className="text-gray-500 mt-1">Ayúdala a volver a casa</p>
           </div>
         </div>
 
-        {/* Botones de Contacto (Dinámicos según lo que el dueño eligió) */}
+        {/* Botones de Contacto */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 text-gray-800">📞 Opciones de Contacto</h2>
-          
           <div className="space-y-3">
             {contactInfo?.showWhatsApp && contactInfo?.ownerWhatsApp && (
-              <button
-                onClick={handleWhatsApp}
-                className="w-full bg-green-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-600 transition flex items-center justify-center gap-2"
-              >
+              <button onClick={handleWhatsApp} className="w-full bg-green-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-600 transition flex items-center justify-center gap-2">
                 <span className="text-xl">💬</span> Avisar por WhatsApp
               </button>
             )}
-
             {contactInfo?.showPhone && contactInfo?.ownerPhone && (
-              <a
-                href={`tel:${contactInfo.ownerPhone}`}
-                className="block w-full bg-blue-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-600 transition text-center"
-              >
+              <a href={`tel:${contactInfo.ownerPhone}`} className="block w-full bg-blue-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-600 transition text-center">
                 📞 Llamar al Dueño
               </a>
             )}
-
             {contactInfo?.showEmail && contactInfo?.ownerEmail && (
-              <button
-                onClick={handleEmail}
-                className="w-full bg-gray-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-600 transition flex items-center justify-center gap-2"
-              >
+              <button onClick={handleEmail} className="w-full bg-gray-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-600 transition flex items-center justify-center gap-2">
                 <span className="text-xl">✉️</span> Enviar Correo
               </button>
             )}
@@ -192,7 +203,7 @@ export default function PublicPetPage() {
 
         {/* Formulario para enviar Foto y Reporte */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">📸 ¿La encontraste? Envía un reporte</h2>
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">📩 ¿La encontraste? Envía un reporte</h2>
           <p className="text-gray-600 mb-4 text-sm">
             Sube una foto y cuéntanos dónde la viste. El dueño recibirá tu mensaje.
           </p>
@@ -202,7 +213,6 @@ export default function PublicPetPage() {
               {success}
             </div>
           )}
-
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
@@ -212,7 +222,7 @@ export default function PublicPetPage() {
           <form onSubmit={handleSubmitReport} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sube una foto (Prueba de vida) 📷
+                Sube una foto (Prueba de vida) 📸
               </label>
               <input
                 type="file"
@@ -225,71 +235,31 @@ export default function PublicPetPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tu nombre *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.finderName}
-                onChange={(e) => setFormData({ ...formData, finderName: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Ej: Juan Pérez"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tu nombre *</label>
+              <input type="text" required value={formData.finderName} onChange={(e) => setFormData({ ...formData, finderName: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Ej: Juan Pérez" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tu email *
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.finderEmail}
-                onChange={(e) => setFormData({ ...formData, finderEmail: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="juan@email.com"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tu email *</label>
+              <input type="email" required value={formData.finderEmail} onChange={(e) => setFormData({ ...formData, finderEmail: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="juan@email.com" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tu teléfono (opcional)
-              </label>
-              <input
-                type="tel"
-                value={formData.finderPhone}
-                onChange={(e) => setFormData({ ...formData, finderPhone: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="300 123 4567"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tu teléfono (opcional)</label>
+              <input type="tel" value={formData.finderPhone} onChange={(e) => setFormData({ ...formData, finderPhone: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="300 123 4567" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                ¿Dónde encontraste a {contactInfo?.petName}? *
-              </label>
-              <textarea
-                required
-                rows={4}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Ej: La encontré en el parque de los deseos, cerca de la entrada principal. Se ve asustada pero bien de salud."
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">¿Dónde encontraste a {contactInfo?.petName}? *</label>
+              <textarea required rows={4} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Ej: La encontré en el parque de los deseos, cerca de la entrada principal." />
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? "Enviando..." : " Enviar Reporte al Dueño"}
+            <button type="submit" disabled={submitting} className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+              {submitting ? "Subiendo y enviando..." : "📤 Enviar Reporte al Dueño"}
             </button>
           </form>
         </div>
 
-        {/* Footer */}
         <div className="text-center mt-8 text-gray-500 text-sm">
           <p>Protegido por <strong className="text-purple-600">XpiPet</strong> 🐾</p>
         </div>
