@@ -1,11 +1,1 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  // Desactivar Turbopack, usar webpack
-  experimental: {
-    turbo: {
-      rules: {},
-    },
-  },
-};
-
-module.exports = nextConfig;
+/** @type {import('next').NextConfig} */ const nextConfig = {}; module.exports = nextConfig; 
