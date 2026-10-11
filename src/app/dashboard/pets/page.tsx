@@ -2,10 +2,11 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
+import Cropper from "react-easy-crop";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -45,6 +46,14 @@ export default function DashboardPage() {
     microchip: "",
     photo: "",
   });
+  
+  // Estados para el crop de imagen
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropImage, setCropImage] = useState<string>("");
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [cropMode, setCropMode] = useState<"create" | "edit">("create");
 
   useEffect(() => {
     checkAuth();
@@ -76,53 +85,88 @@ export default function DashboardPage() {
     }
   }
 
-  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  // Función para crear blob desde crop
+  const createImage = (url: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener("load", () => resolve(image));
+      image.addEventListener("error", (error) => reject(error));
+      image.src = url;
+    });
+
+  const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob> => {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("No context");
+
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+      }, "image/jpeg");
+    });
+  };
+
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>, mode: "create" | "edit") {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    setUploading(true);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImage(reader.result as string);
+      setCropMode(mode);
+      setShowCropModal(true);
+      setZoom(1);
+      setCrop({ x: 0, y: 0 });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleCropSave() {
+    if (!cropImage || !croppedAreaPixels) return;
+
     try {
+      setUploading(cropMode === "create");
+      setUploadingEdit(cropMode === "edit");
+
+      const croppedBlob = await getCroppedImg(cropImage, croppedAreaPixels);
       const formDataUpload = new FormData();
-      formDataUpload.append("file", file);
-      
+      formDataUpload.append("file", croppedBlob, "cropped-image.jpg");
+
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formDataUpload,
       });
-      
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      
+
       setFormData({ ...formData, photo: data.url });
+      setShowCropModal(false);
+      setCropImage("");
     } catch (err: any) {
       alert("Error al subir foto: " + err.message);
     } finally {
       setUploading(false);
-    }
-  }
-
-  // NUEVA: Función para subir foto en edición
-  async function handleEditPhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    setUploadingEdit(true);
-    try {
-      const formDataUpload = new FormData();
-      formDataUpload.append("file", file);
-      
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formDataUpload,
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      
-      setFormData({ ...formData, photo: data.url });
-    } catch (err: any) {
-      alert("Error al subir foto: " + err.message);
-    } finally {
       setUploadingEdit(false);
     }
   }
@@ -187,7 +231,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ status: "lost", lost_report: report }),
       });
       if (!response.ok) throw new Error("Error al reportar");
-      alert("🚨 Mascota reportada como PERDIDA");
+      alert(" Mascota reportada como PERDIDA");
       setShowLostModal(null);
       setLostReport("");
       loadPets();
@@ -425,12 +469,12 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "🐕", cat: "🐈", bird: "🐦", rabbit: "🐰", other: "" };
+  const speciesEmoji: Record<string, string> = { dog: "", cat: "🐱", bird: "🐦", rabbit: "🐰", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
     home: { color: "bg-green-100 text-green-700", text: "En casa", emoji: "" },
-    lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "" },
+    lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "🚨" },
   };
 
   function getSpeciesName(species: string): string { return speciesNames[species] || species; }
@@ -479,25 +523,25 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl shadow p-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">Nueva Mascota</h3>
             <form onSubmit={handleCreatePet} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-              {/* CAMPO DE FOTO AL PRINCIPIO - DESTACADO */}
+
+              {/* CAMPO DE FOTO CON CROP */}
               <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-dashed border-purple-300">
-                <label className="block text-sm font-medium text-gray-700 mb-2">📸 Foto de la mascota (opcional pero recomendado)</label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handlePhotoUpload} 
+                <label className="block text-sm font-medium text-gray-700 mb-2"> Foto de la mascota (opcional pero recomendado)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handlePhotoSelect(e, "create")}
                   disabled={uploading}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" 
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer"
                 />
-                {formData.photo && (
+                {formData.photo && !uploading && (
                   <div className="mt-3 flex items-center gap-4">
                     <div className="w-24 h-24 rounded-full border-4 border-purple-300 overflow-hidden shadow-lg">
-                      <img src={formData.photo} alt="Vista previa" className="w-full h-full object-cover object-center" />
+                      <img src={formData.photo} alt="Vista previa" className="w-full h-full object-cover" />
                     </div>
                     <div>
-                      <p className="text-sm text-green-600 font-semibold">✅ Foto subida correctamente</p>
-                      <p className="text-xs text-gray-500">La foto se guardará con la mascota</p>
+                      <p className="text-sm text-green-600 font-semibold">✅ Foto lista para guardar</p>
+                      <p className="text-xs text-gray-500">Puedes ajustarla de nuevo si lo deseas</p>
                     </div>
                   </div>
                 )}
@@ -517,8 +561,8 @@ export default function DashboardPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Especie *</label>
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
-                  <option value="dog">🐕 Perro</option>
-                  <option value="cat">🐈 Gato</option>
+                  <option value="dog">🐶 Perro</option>
+                  <option value="cat">🐱 Gato</option>
                   <option value="bird">🐦 Ave</option>
                   <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
@@ -567,18 +611,19 @@ export default function DashboardPage() {
               return (
                 <div key={pet.id} className={`bg-white rounded-xl shadow p-6 ${isLost ? "border-2 border-red-500" : ""}`}>
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || "🐾"} {pet.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || ""} {pet.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${statusInfo.color}`}>{statusInfo.emoji} {statusInfo.text}</span>
                   </div>
 
-                  {/* CÍRCULO PERFECTO CON OBJECT-CENTER */}
+                  {/* CÍRCULO PERFECTO */}
                   <div className="mb-4 flex justify-center">
                     {pet.photo_url ? (
                       <div className="w-32 h-32 rounded-full border-4 border-purple-100 shadow-md overflow-hidden">
-                        <img 
-                          src={pet.photo_url} 
-                          alt={pet.name} 
-                          className="w-full h-full object-cover object-center"
+                        <img
+                          src={pet.photo_url}
+                          alt={pet.name}
+                          className="w-full h-full object-cover"
+                          style={{ objectPosition: 'center center' }}
                         />
                       </div>
                     ) : (
@@ -608,13 +653,13 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex gap-2 mb-2">
                       <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">📍 Ver Ubicación</button>
-                      <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">📜 Ver Historial</button>
+                      <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700"> Ver Historial</button>
                     </div>
                     <button onClick={() => openVaccines(pet)} className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700 mb-2 flex items-center justify-center gap-2">💉 Vacunas y Salud</button>
                     {isLost ? (
                       <button onClick={() => reportFound(pet.id)} className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 mb-2">✅ Marcar como Encontrado</button>
                     ) : (
-                      <button onClick={() => setShowLostModal(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2"> Reportar Perdido</button>
+                      <button onClick={() => setShowLostModal(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2">🚨 Reportar Perdido</button>
                     )}
                     <button onClick={() => handleDeletePet(pet.id)} className="w-full bg-red-100 text-red-600 text-sm py-2 rounded hover:bg-red-200">🗑️ Eliminar</button>
                     <div className="mt-3 pt-3 border-t">
@@ -632,6 +677,63 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* Modal de Crop Interactivo */}
+      {showCropModal && cropImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">
+              📸 Ajusta la foto de tu mascota
+            </h3>
+            <p className="text-sm text-gray-600 mb-4 text-center">
+              Mueve y haz zoom para seleccionar la parte que quieres mostrar
+            </p>
+            
+            <div className="relative w-full h-80 mb-6 bg-gray-100 rounded-lg overflow-hidden">
+              <Cropper
+                image={cropImage}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                🔍 Zoom: {Math.round(zoom * 100)}%
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="3"
+                step="0.1"
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCropSave}
+                className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700"
+              >
+                ✅ Guardar selección
+              </button>
+              <button
+                onClick={() => setShowCropModal(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal QR */}
       {selectedPet && (
@@ -653,7 +755,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Modal Editar - AHORA CON CAMPO DE FOTO */}
+      {/* Modal Editar - CON CAMPO DE FOTO CON CROP */}
       {editingPet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -662,16 +764,16 @@ export default function DashboardPage() {
               <p className="text-sm text-gray-500">Modifica la información de {editingPet.name}</p>
             </div>
             <form onSubmit={handleUpdatePet} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-              {/* CAMPO DE FOTO EN EDICIÓN */}
+
+              {/* CAMPO DE FOTO EN EDICIÓN CON CROP */}
               <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border-2 border-dashed border-blue-300">
-                <label className="block text-sm font-medium text-gray-700 mb-2">📸 Cambiar foto (opcional)</label>
-                
+                <label className="block text-sm font-medium text-gray-700 mb-2"> Cambiar foto (opcional)</label>
+
                 {/* Mostrar foto actual si existe */}
                 {formData.photo && (
                   <div className="mb-3 flex items-center gap-4">
                     <div className="w-24 h-24 rounded-full border-4 border-blue-300 overflow-hidden shadow-lg">
-                      <img src={formData.photo} alt="Foto actual" className="w-full h-full object-cover object-center" />
+                      <img src={formData.photo} alt="Foto actual" className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-700">Foto actual</p>
@@ -679,13 +781,13 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 )}
-                
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleEditPhotoUpload} 
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handlePhotoSelect(e, "edit")}
                   disabled={uploadingEdit}
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer" 
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer"
                 />
                 {uploadingEdit && (
                   <div className="mt-3 flex items-center gap-2">
@@ -703,10 +805,10 @@ export default function DashboardPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Especie *</label>
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
-                  <option value="dog">🐕 Perro</option>
-                  <option value="cat">🐈 Gato</option>
-                  <option value="bird"> Ave</option>
-                  <option value="rabbit">🐰 Conejo</option>
+                  <option value="dog"> Perro</option>
+                  <option value="cat">🐱 Gato</option>
+                  <option value="bird">🐦 Ave</option>
+                  <option value="rabbit"> Conejo</option>
                   <option value="other">Otro</option>
                 </select>
               </div>
@@ -744,7 +846,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2"> Ubicación de {showMap.name}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">📍 Ubicación de {showMap.name}</h3>
               <p className="text-sm text-gray-500">Última actualización: {showMap.last_location_updated_at || "Nunca"}</p>
             </div>
             <div className="border-2 border-purple-200 rounded-lg overflow-hidden mb-6">
@@ -800,10 +902,10 @@ export default function DashboardPage() {
                       </div>
                       <div className="mt-2 pt-2 border-t border-purple-100">
                         {isLoading ? (
-                          <p className="text-xs text-purple-600 italic">🔄 Obteniendo dirección...</p>
+                          <p className="text-xs text-purple-600 italic"> Obteniendo dirección...</p>
                         ) : address ? (
                           <div>
-                            <p className="text-xs text-gray-500 mb-1"> Dirección aproximada:</p>
+                            <p className="text-xs text-gray-500 mb-1">📌 Dirección aproximada:</p>
                             <p className="text-sm font-semibold text-gray-800">{address}</p>
                           </div>
                         ) : (
@@ -838,7 +940,7 @@ export default function DashboardPage() {
               <>
                 {vaccinations.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4">💉</div>
                     <p className="text-gray-600 mb-4">No hay registros de vacunas</p>
                     <button onClick={() => setShowAddVaccine(true)} className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 font-semibold">+ Agregar primera vacuna</button>
                   </div>
@@ -860,7 +962,7 @@ export default function DashboardPage() {
                             {vac.vet_name && (<div><p className="text-xs text-gray-500">Veterinario:</p><p className="font-semibold">{vac.vet_name}</p></div>)}
                             {vac.lot_number && (<div><p className="text-xs text-gray-500">Lote:</p><p className="font-mono text-xs">{vac.lot_number}</p></div>)}
                           </div>
-                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">🗑️ Eliminar registro</button>
+                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">️ Eliminar registro</button>
                         </div>
                       );
                     })}
