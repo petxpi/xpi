@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS pets (
   last_known_location_lat REAL,
   last_known_location_lng REAL,
   last_location_updated_at TEXT,
+  photo_url TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT,
   deleted_at TEXT

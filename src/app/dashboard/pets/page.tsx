@@ -126,9 +126,9 @@ export default function DashboardPage() {
   }, []);
 
   function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>, mode: "create" | "edit") {
-    const file = e.target.files?.[0];
+  console.log("📸 handlePhotoSelect llamado, mode:", mode, "files:", e.target.files);
+  const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = () => {
       setCropImage(reader.result as string);
