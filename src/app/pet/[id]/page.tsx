@@ -17,6 +17,7 @@ export default function PublicPetPage() {
     description: "",
   });
   const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -44,7 +45,9 @@ export default function PublicPetPage() {
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setPhoto(e.target.files[0]);
+      const file = e.target.files[0];
+      setPhoto(file);
+      setPhotoPreview(URL.createObjectURL(file));
     }
   };
 
@@ -78,7 +81,6 @@ export default function PublicPetPage() {
     try {
       let photoUrl = null;
 
-      // 1. SUBIR LA FOTO A CLOUDINARY (si el usuario seleccionó una)
       if (photo) {
         const uploadFormData = new FormData();
         uploadFormData.append("file", photo);
@@ -97,7 +99,6 @@ export default function PublicPetPage() {
         photoUrl = uploadData.url;
       }
 
-      // 2. ENVIAR EL REPORTE CON LA URL DE LA FOTO
       const response = await fetch("/api/found-reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,6 +123,7 @@ export default function PublicPetPage() {
       setSuccess("✅ Reporte guardado exitosamente. El dueño será notificado.");
       setFormData({ finderName: "", finderEmail: "", finderPhone: "", description: "" });
       setPhoto(null);
+      setPhotoPreview(null);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -152,78 +154,80 @@ export default function PublicPetPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      {/* CAMBIO: max-w-lg para que se vea bien en PC pero siga siendo compacto como en celular */}
-      <div className="max-w-lg mx-auto">
+    <div className="min-h-screen bg-gray-50 py-6 px-4">
+      <div className="max-w-md mx-auto">
         
         {/* Header de Alerta */}
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
-          <p className="font-bold">🚨 ¡{contactInfo?.petName} está PERDIDO!</p>
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded">
+          <p className="font-bold"> ¡{contactInfo?.petName} está PERDIDO!</p>
           <p className="text-sm">Si la ves, por favor contacta al dueño.</p>
         </div>
 
-        {/* Foto de la Mascota (CENTRADA Y AJUSTADA) */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
+        {/* Foto de la Mascota - AHORA BIEN CENTRADA */}
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-4">
           {contactInfo?.petPhotoUrl ? (
-            <div className="w-full h-64 overflow-hidden bg-gray-100 flex items-center justify-center">
+            <div className="w-full h-64 sm:h-80 bg-gray-100 flex items-center justify-center overflow-hidden">
               <img
                 src={contactInfo.petPhotoUrl}
                 alt={contactInfo.petName}
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-cover"
+                style={{ objectPosition: 'center center' }}
               />
             </div>
           ) : (
-            <div className="h-64 bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+            <div className="h-64 sm:h-80 bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
               <span className="text-8xl">🐶</span>
             </div>
           )}
           <div className="p-4 text-center">
-            <h1 className="text-3xl font-bold text-gray-800">{contactInfo?.petName}</h1>
+            <h1 className="text-2xl font-bold text-gray-800">{contactInfo?.petName}</h1>
             <p className="text-gray-500 mt-1">Ayúdala a volver a casa</p>
           </div>
         </div>
 
-        {/* Botones de Contacto */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">📞 Opciones de Contacto</h2>
-          <div className="space-y-3">
-            {contactInfo?.showWhatsApp && contactInfo?.ownerWhatsApp && (
-              <button onClick={handleWhatsApp} className="w-full bg-green-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-600 transition flex items-center justify-center gap-2">
-                <span className="text-xl">💬</span> Avisar por WhatsApp
-              </button>
-            )}
-            {contactInfo?.showPhone && contactInfo?.ownerPhone && (
-              <a href={`tel:${contactInfo.ownerPhone}`} className="block w-full bg-blue-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-600 transition text-center">
-                📞 Llamar al Dueño
-              </a>
-            )}
-            {contactInfo?.showEmail && contactInfo?.ownerEmail && (
-              <button onClick={handleEmail} className="w-full bg-gray-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-600 transition flex items-center justify-center gap-2">
-                <span className="text-xl">✉️</span> Enviar Correo
-              </button>
-            )}
+        {/* Botones de Contacto - SOLO si el dueño los autorizó */}
+        {(contactInfo?.showWhatsApp || contactInfo?.showPhone || contactInfo?.showEmail) && (
+          <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+            <h2 className="text-lg font-semibold mb-3 text-gray-800"> Opciones de Contacto</h2>
+            <div className="space-y-2">
+              {contactInfo?.showWhatsApp && contactInfo?.ownerWhatsApp && (
+                <button onClick={handleWhatsApp} className="w-full bg-green-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-600 transition flex items-center justify-center gap-2">
+                  <span>💬</span> Avisar por WhatsApp
+                </button>
+              )}
+              {contactInfo?.showPhone && contactInfo?.ownerPhone && (
+                <a href={`tel:${contactInfo.ownerPhone}`} className="block w-full bg-blue-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-600 transition text-center">
+                  📞 Llamar al Dueño
+                </a>
+              )}
+              {contactInfo?.showEmail && contactInfo?.ownerEmail && (
+                <button onClick={handleEmail} className="w-full bg-gray-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-600 transition flex items-center justify-center gap-2">
+                  <span>✉️</span> Enviar Correo
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Formulario para enviar Foto y Reporte (ESTILO ORIGINAL CONSERVADO) */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">📩 ¿La encontraste? Envía un reporte</h2>
-          <p className="text-gray-600 mb-4 text-sm">
+        {/* Formulario de Reporte */}
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <h2 className="text-lg font-semibold mb-3 text-gray-800">📩 ¿La encontraste? Envía un reporte</h2>
+          <p className="text-gray-600 mb-3 text-sm">
             Sube una foto y cuéntanos dónde la viste. El dueño recibirá tu mensaje.
           </p>
 
           {success && (
-            <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+            <div className="mb-3 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
               {success}
             </div>
           )}
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="mb-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmitReport} className="space-y-4">
+          <form onSubmit={handleSubmitReport} className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Sube una foto (Prueba de vida) 📸
@@ -235,7 +239,11 @@ export default function PublicPetPage() {
                 onChange={handlePhotoChange}
                 className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
               />
-              {photo && <p className="text-sm text-green-600 mt-1">✅ Foto seleccionada: {photo.name}</p>}
+              {photoPreview && (
+                <div className="mt-2">
+                  <img src={photoPreview} alt="Vista previa" className="w-full h-32 object-cover rounded" />
+                </div>
+              )}
             </div>
 
             <div>
@@ -255,16 +263,16 @@ export default function PublicPetPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">¿Dónde encontraste a {contactInfo?.petName}? *</label>
-              <textarea required rows={4} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Ej: La encontré en el parque de los deseos, cerca de la entrada principal." />
+              <textarea required rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Ej: La encontré en el parque central..." />
             </div>
 
             <button type="submit" disabled={submitting} className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-              {submitting ? "Subiendo y enviando..." : "📤 Enviar Reporte al Dueño"}
+              {submitting ? "Enviando..." : "📤 Enviar Reporte al Dueño"}
             </button>
           </form>
         </div>
 
-        <div className="text-center mt-8 text-gray-500 text-sm">
+        <div className="text-center mt-6 text-gray-500 text-sm">
           <p>Protegido por <strong className="text-purple-600">XpiPet</strong> 🐾</p>
         </div>
       </div>
