@@ -11,7 +11,6 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Obtener datos del usuario y mascotas
         const [userRes, petsRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch("/api/pets")
@@ -56,21 +55,21 @@ export default function DashboardPage() {
         {/* Menú Principal */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           
-          {/* Mis Mascotas */}
+          {/* Mis Mascotas - ENLACE AL DASHBOARD ORIGINAL */}
           <Link href="/dashboard/pets" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl"></span>
+              <span className="text-3xl">🐾</span>
               <h3 className="text-xl font-semibold text-gray-800">Mis Mascotas</h3>
             </div>
             <p className="text-sm text-gray-500">
-              Gestiona tus mascotas y genera códigos QR
+              Ver todas tus mascotas con sus botones de acción
             </p>
             <p className="text-2xl font-bold text-purple-600 mt-3">
               {pets.length}
             </p>
           </Link>
 
-          {/* Reportes Recibidos - NUEVO */}
+          {/* Reportes Recibidos */}
           <Link href="/dashboard/reports" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-3xl">📋</span>
@@ -103,8 +102,8 @@ export default function DashboardPage() {
             </p>
           </Link>
 
-          {/* Historial de Ubicación */}
-          <Link href="/dashboard/location" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+          {/* Ubicación */}
+          <Link href="/dashboard/pets" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-3xl">📍</span>
               <h3 className="text-xl font-semibold text-gray-800">Ubicación</h3>
@@ -115,7 +114,7 @@ export default function DashboardPage() {
           </Link>
 
           {/* Vacunas */}
-          <Link href="/dashboard/vaccinations" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+          <Link href="/dashboard/pets" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
             <div className="flex items-center gap-3 mb-2">
               <span className="text-3xl">💉</span>
               <h3 className="text-xl font-semibold text-gray-800">Vacunas</h3>
@@ -177,7 +176,7 @@ export default function DashboardPage() {
                       }`}>
                         {pet.status === 'home' ? '🏠 En casa' :
                          pet.status === 'lost' ? '🚨 Perdida' :
-                         '📍 En ruta'}
+                         ' En ruta'}
                       </span>
                       <Link href={`/pet/${pet.public_id}`} className="text-purple-600 hover:underline text-sm">
                         Ver QR →
