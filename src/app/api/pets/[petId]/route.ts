@@ -7,7 +7,7 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.BETTER_AUTH_SECRET || "secret"
 );
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ petId: string }> }) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token");
@@ -18,10 +18,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     const { payload } = await jwtVerify(token.value, JWT_SECRET);
     const userId = payload.userId as string;
-    const petId = params.id;
+    
+    // CAMBIO: await params para Next.js 15+
+    const { petId } = await params;
 
     const body = await request.json();
-    // AGREGADO: photo al destructuring
     const { name, species, breed, color, sex, microchip, photo } = body;
 
     if (!name || !species) {
@@ -41,7 +42,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ message: "Mascota no encontrada o no autorizada" }, { status: 404 });
     }
 
-    // AGREGADO: photo_url en el UPDATE
+    // Actualizar con photo_url
     await db.execute(
       `UPDATE pets 
        SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, photo_url = ?, updated_at = datetime('now')
@@ -59,7 +60,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ petId: string }> }) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token");
@@ -70,7 +71,9 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     const { payload } = await jwtVerify(token.value, JWT_SECRET);
     const userId = payload.userId as string;
-    const petId = params.id;
+    
+    // CAMBIO: await params para Next.js 15+
+    const { petId } = await params;
 
     await db.execute(
       "UPDATE pets SET deleted_at = datetime('now') WHERE id = ? AND user_id = ?",
@@ -84,7 +87,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ petId: string }> }) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token");
@@ -95,7 +98,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     const { payload } = await jwtVerify(token.value, JWT_SECRET);
     const userId = payload.userId as string;
-    const petId = params.id;
+    
+    // CAMBIO: await params para Next.js 15+
+    const { petId } = await params;
 
     const body = await request.json();
     const { status, lost_report } = body;
