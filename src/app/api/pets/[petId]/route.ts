@@ -1,69 +1,52 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { cookies } from "next/headers";
+import { jwtVerify } from "jose";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ petId: string }> }
-) {
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.BETTER_AUTH_SECRET || "secret"
+);
+
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { petId } = await params;
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth-token");
 
-    if (!petId) {
-      return NextResponse.json(
-        { message: "ID de mascota no válido" },
-        { status: 400 }
-      );
+    if (!token) {
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
     }
 
-    const result = await db.execute(
-      `SELECT * FROM pets WHERE id = ?`,
-      [petId]
-    );
-
-    if (result.rows.length === 0) {
-      return NextResponse.json(
-        { message: "Mascota no encontrada" },
-        { status: 404 }
-      );
-    }
-
-    const pet = result.rows[0] as any;
-
-    return NextResponse.json(
-      { pet },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error("❌ Error al obtener mascota:", error);
-    return NextResponse.json(
-      { message: "Error interno del servidor: " + error.message },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ petId: string }> }
-) {
-  try {
-    const { petId } = await params;
-
-    if (!petId) {
-      return NextResponse.json(
-        { message: "ID de mascota no válido" },
-        { status: 400 }
-      );
-    }
+    const { payload } = await jwtVerify(token.value, JWT_SECRET);
+    const userId = payload.userId as string;
+    const petId = params.id;
 
     const body = await request.json();
-    const { name, species, breed, color, sex, microchip, status, photo_url } = body;
+    // AGREGADO: photo al destructuring
+    const { name, species, breed, color, sex, microchip, photo } = body;
 
+    if (!name || !species) {
+      return NextResponse.json(
+        { message: "Nombre y especie son obligatorios" },
+        { status: 400 }
+      );
+    }
+
+    // Verificar que la mascota pertenece al usuario
+    const checkResult = await db.execute(
+      "SELECT id FROM pets WHERE id = ? AND user_id = ?",
+      [petId, userId]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return NextResponse.json({ message: "Mascota no encontrada o no autorizada" }, { status: 404 });
+    }
+
+    // AGREGADO: photo_url en el UPDATE
     await db.execute(
       `UPDATE pets 
-       SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, status = ?, photo_url = ?
-       WHERE id = ?`,
-      [name, species, breed, color, sex, microchip || "", status || "home", photo_url || null, petId]
+       SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, photo_url = ?, updated_at = datetime('now')
+       WHERE id = ? AND user_id = ?`,
+      [name, species, breed || null, color || null, sex || null, microchip || null, photo || null, petId, userId]
     );
 
     return NextResponse.json(
@@ -71,98 +54,62 @@ export async function PUT(
       { status: 200 }
     );
   } catch (error: any) {
-    console.error(" Error al actualizar mascota:", error);
-    return NextResponse.json(
-      { message: "Error interno del servidor: " + error.message },
-      { status: 500 }
-    );
+    console.error("Error al actualizar mascota:", error);
+    return NextResponse.json({ message: "Error interno: " + error.message }, { status: 500 });
   }
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ petId: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { petId } = await params;
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth-token");
 
-    if (!petId) {
-      return NextResponse.json(
-        { message: "ID de mascota no válido" },
-        { status: 400 }
-      );
+    if (!token) {
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
     }
+
+    const { payload } = await jwtVerify(token.value, JWT_SECRET);
+    const userId = payload.userId as string;
+    const petId = params.id;
+
+    await db.execute(
+      "UPDATE pets SET deleted_at = datetime('now') WHERE id = ? AND user_id = ?",
+      [petId, userId]
+    );
+
+    return NextResponse.json({ message: "Mascota eliminada exitosamente" }, { status: 200 });
+  } catch (error: any) {
+    console.error("Error al eliminar mascota:", error);
+    return NextResponse.json({ message: "Error interno: " + error.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth-token");
+
+    if (!token) {
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    }
+
+    const { payload } = await jwtVerify(token.value, JWT_SECRET);
+    const userId = payload.userId as string;
+    const petId = params.id;
 
     const body = await request.json();
     const { status, lost_report } = body;
 
-    const updates: string[] = [];
-    const values: any[] = [];
-
-    if (status !== undefined) {
-      updates.push("status = ?");
-      values.push(status);
-    }
-
-    if (lost_report !== undefined) {
-      updates.push("lost_report = ?");
-      values.push(lost_report);
-    }
-
-    if (updates.length === 0) {
-      return NextResponse.json(
-        { message: "No hay campos para actualizar" },
-        { status: 400 }
-      );
-    }
-
-    values.push(petId);
-
-    const sql = `UPDATE pets SET ${updates.join(", ")} WHERE id = ?`;
-    
-    await db.execute(sql, values);
-
-    return NextResponse.json(
-      { message: "Mascota actualizada parcialmente" },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error("❌ Error al actualizar mascota:", error);
-    return NextResponse.json(
-      { message: "Error interno del servidor: " + error.message },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ petId: string }> }
-) {
-  try {
-    const { petId } = await params;
-
-    if (!petId) {
-      return NextResponse.json(
-        { message: "ID de mascota no válido" },
-        { status: 400 }
-      );
-    }
-
     await db.execute(
-      `DELETE FROM pets WHERE id = ?`,
-      [petId]
+      `UPDATE pets 
+       SET status = ?, lost_report = ?, updated_at = datetime('now')
+       WHERE id = ? AND user_id = ?`,
+      [status || 'home', lost_report || null, petId, userId]
     );
 
-    return NextResponse.json(
-      { message: "Mascota eliminada exitosamente" },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: "Estado actualizado exitosamente" }, { status: 200 });
   } catch (error: any) {
-    console.error("❌ Error al eliminar mascota:", error);
-    return NextResponse.json(
-      { message: "Error interno del servidor: " + error.message },
-      { status: 500 }
-    );
+    console.error("Error al actualizar estado:", error);
+    return NextResponse.json({ message: "Error interno: " + error.message }, { status: 500 });
   }
 }
