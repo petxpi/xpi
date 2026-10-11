@@ -1,7 +1,10 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 
 export default function DashboardPage() {
@@ -31,6 +34,7 @@ export default function DashboardPage() {
   const [showLostModal, setShowLostModal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     species: "",
@@ -38,6 +42,7 @@ export default function DashboardPage() {
     color: "",
     sex: "",
     microchip: "",
+    photo: "",
   });
 
   useEffect(() => {
@@ -70,6 +75,31 @@ export default function DashboardPage() {
     }
   }
 
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploading(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
+      
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataUpload,
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      
+      setFormData({ ...formData, photo: data.url });
+    } catch (err: any) {
+      alert("Error al subir foto: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleCreatePet(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -83,7 +113,7 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error(data.message || "Error al crear mascota");
       alert(`✅ Mascota creada! Código: ${data.publicId}`);
       setShowForm(false);
-      setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "" });
+      setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "", photo: "" });
       loadPets();
     } catch (err: any) {
       setError(err.message);
@@ -104,7 +134,7 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error(data.message || "Error al actualizar mascota");
       alert("✅ Mascota actualizada!");
       setEditingPet(null);
-      setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "" });
+      setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "", photo: "" });
       loadPets();
     } catch (err: any) {
       setError(err.message);
@@ -163,12 +193,13 @@ export default function DashboardPage() {
       color: pet.color || "",
       sex: pet.sex || "",
       microchip: pet.microchip || "",
+      photo: pet.photo_url || "",
     });
   }
 
   function closeEditModal() {
     setEditingPet(null);
-    setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "" });
+    setFormData({ name: "", species: "", breed: "", color: "", sex: "", microchip: "", photo: "" });
   }
 
   function downloadQR() {
@@ -252,23 +283,27 @@ export default function DashboardPage() {
       );
       if (!response.ok) return "Dirección no disponible";
       const data = await response.json();
-      let address = "";
+      let address = "Dirección no disponible";
       const addr = data.address || {};
+
       if (addr.road) {
-        let roadName = addr.road;
-        if (addr.house_number) roadName += ` #${addr.house_number}`;
-        if (addr.suburb || addr.neighbourhood) roadName += `, ${addr.suburb || addr.neighbourhood}`;
-        if (addr.city || addr.town) roadName += `, ${addr.city || addr.town}`;
-        address = roadName;
+        address = addr.road;
+        if (addr.house_number) {
+          address += ` #${addr.house_number}`;
+        }
+        if (addr.suburb || addr.neighbourhood || addr.residential) {
+          address += `, ${addr.suburb || addr.neighbourhood || addr.residential}`;
+        }
       } else if (addr.pedestrian || addr.footway) {
-        address = `${addr.pedestrian || addr.footway}`;
+        address = addr.pedestrian || addr.footway;
         if (addr.suburb) address += `, ${addr.suburb}`;
-        if (addr.city) address += `, ${addr.city}`;
-      } else if (addr.suburb) {
-        address = `${addr.suburb}, ${addr.city || addr.town || ''}`;
-      } else {
-        address = data.display_name || "Dirección no disponible";
+      } else if (addr.suburb || addr.neighbourhood) {
+        address = addr.suburb || addr.neighbourhood;
+      } else if (data.display_name) {
+        const parts = data.display_name.split(',');
+        address = parts.slice(0, 2).join(',').trim();
       }
+
       setAddressCache(prev => ({ ...prev, [key]: address }));
       setLoadingAddresses(prev => ({ ...prev, [key]: false }));
       return address;
@@ -304,7 +339,6 @@ export default function DashboardPage() {
     }
   }
 
-  // 🔥 FUNCIONES DE VACUNAS
   async function openVaccines(pet: any) {
     setSelectedPetForVaccines(pet);
     setShowVaccines(true);
@@ -364,12 +398,12 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "🐕", cat: "🐈", bird: "", rabbit: "🐰", other: "🐾" };
+  const speciesEmoji: Record<string, string> = { dog: "🐕", cat: "🐈", bird: "🐦", rabbit: "🐰", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
-    home: { color: "bg-green-100 text-green-700", text: "En casa", emoji: "" },
-    lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "" },
+    home: { color: "bg-green-100 text-green-700", text: "En casa", emoji: "🏠" },
+    lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "🚨" },
   };
 
   function getSpeciesName(species: string): string { return speciesNames[species] || species; }
@@ -390,7 +424,17 @@ export default function DashboardPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
-          <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesión</button>
+          <div className="flex items-center gap-4">
+            <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">
+              ⚙️ Contacto Público
+            </Link>
+            <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">
+              👤 Mi Perfil
+            </Link>
+            <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">
+              Cerrar Sesión
+            </button>
+          </div>
         </div>
       </header>
 
@@ -408,6 +452,34 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl shadow p-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">Nueva Mascota</h3>
             <form onSubmit={handleCreatePet} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/* CAMPO DE FOTO AL PRINCIPIO - DESTACADO */}
+              <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-dashed border-purple-300">
+                <label className="block text-sm font-medium text-gray-700 mb-2">📸 Foto de la mascota (opcional pero recomendado)</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handlePhotoUpload} 
+                  disabled={uploading}
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" 
+                />
+                {formData.photo && (
+                  <div className="mt-3 flex items-center gap-4">
+                    <img src={formData.photo} alt="Vista previa" className="w-24 h-24 object-cover rounded-full border-4 border-purple-300 shadow-lg" />
+                    <div>
+                      <p className="text-sm text-green-600 font-semibold">✅ Foto subida correctamente</p>
+                      <p className="text-xs text-gray-500">La foto se guardará con la mascota</p>
+                    </div>
+                  </div>
+                )}
+                {uploading && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                    <p className="text-sm text-purple-600 font-medium">Subiendo foto a la nube...</p>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                 <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none" />
@@ -466,9 +538,27 @@ export default function DashboardPage() {
               return (
                 <div key={pet.id} className={`bg-white rounded-xl shadow p-6 ${isLost ? "border-2 border-red-500" : ""}`}>
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || ""} {pet.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || "🐾"} {pet.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${statusInfo.color}`}>{statusInfo.emoji} {statusInfo.text}</span>
                   </div>
+
+                  {/* CÍRCULO PERFECTO CON OVERFLOW-HIDDEN Y OBJECT-COVER */}
+                  <div className="mb-4 flex justify-center">
+                    {pet.photo_url ? (
+                      <div className="w-32 h-32 rounded-full border-4 border-purple-100 shadow-md overflow-hidden">
+                        <img 
+                          src={pet.photo_url} 
+                          alt={pet.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-4xl border-4 border-gray-100">
+                        {speciesEmoji[pet.species] || "🐾"}
+                      </div>
+                    )}
+                  </div>
+
                   {isLost && pet.lost_report && (
                     <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded mb-3 text-sm">
                       <strong>Reporte:</strong> {pet.lost_report}
@@ -489,7 +579,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex gap-2 mb-2">
                       <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">📍 Ver Ubicación</button>
-                      <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700"> Ver Historial</button>
+                      <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">📜 Ver Historial</button>
                     </div>
                     <button onClick={() => openVaccines(pet)} className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700 mb-2 flex items-center justify-center gap-2">💉 Vacunas y Salud</button>
                     {isLost ? (
@@ -552,7 +642,7 @@ export default function DashboardPage() {
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
                   <option value="dog">🐕 Perro</option>
-                  <option value="cat"> Gato</option>
+                  <option value="cat">🐈 Gato</option>
                   <option value="bird">🐦 Ave</option>
                   <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
@@ -620,7 +710,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2"> Historial de Ubicaciones - {showMap?.name || "Mascota"}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">📜 Historial de Ubicaciones - {showMap?.name || "Mascota"}</h3>
               <p className="text-sm text-gray-500">Últimas {locationHistory.length} ubicaciones registradas</p>
             </div>
             <div className="space-y-3 mb-6">
@@ -670,7 +760,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/*  Modal de Vacunas */}
+      {/* Modal de Vacunas */}
       {showVaccines && selectedPetForVaccines && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
@@ -708,7 +798,7 @@ export default function DashboardPage() {
                             {vac.vet_name && (<div><p className="text-xs text-gray-500">Veterinario:</p><p className="font-semibold">{vac.vet_name}</p></div>)}
                             {vac.lot_number && (<div><p className="text-xs text-gray-500">Lote:</p><p className="font-mono text-xs">{vac.lot_number}</p></div>)}
                           </div>
-                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">️ Eliminar registro</button>
+                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">🗑️ Eliminar registro</button>
                         </div>
                       );
                     })}
