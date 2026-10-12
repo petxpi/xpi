@@ -26,13 +26,15 @@ export async function GET(request: Request) {
     const petId = searchParams.get("petId");
 
     if (petId) {
-      // MODO PÚBLICO: Obtener info de la mascota y contacto del dueño (sin requerir login)
+      // MODO PÚBLICO: Obtener info completa de la mascota y contacto del dueño
       const result = await db.execute(
-        `SELECT p.name as pet_name, p.status as pet_status, p.photo_url,
-                u.name as owner_name, u.email as owner_email, 
+        `SELECT p.name as pet_name, p.public_id, p.species, p.breed, p.color, p.sex, p.microchip, 
+                p.status as pet_status, p.photo_url, p.created_at, 
+                p.last_known_location_lat, p.last_known_location_lng, p.last_location_updated_at, p.lost_report,
+                u.name as owner_name, u.email as owner_email,
                 u.phone, u.whatsapp, u.show_phone, u.show_whatsapp, u.show_email
          FROM pets p
-         JOIN users u ON p.user_id = u.id
+         JOIN users u ON p.owner_id = u.id
          WHERE p.id = ? OR p.public_id = ?`,
         [petId, petId]
       );
@@ -44,8 +46,21 @@ export async function GET(request: Request) {
       const row = result.rows[0] as any;
       return NextResponse.json({
         petName: row.pet_name,
+        publicId: row.public_id,
+        species: row.species,
+        breed: row.breed,
+        color: row.color,
+        sex: row.sex,
+        microchip: row.microchip,
         petStatus: row.pet_status,
         petPhotoUrl: row.photo_url,
+        createdAt: row.created_at,
+        lostReport: row.lost_report,
+        lastLocation: row.last_known_location_lat ? {
+          lat: row.last_known_location_lat,
+          lng: row.last_known_location_lng,
+          updatedAt: row.last_location_updated_at
+        } : null,
         ownerName: row.owner_name,
         ownerEmail: row.owner_email,
         ownerPhone: row.phone,
@@ -56,15 +71,14 @@ export async function GET(request: Request) {
       });
     }
 
-    // MODO PRIVADO: Obtener configuración del usuario logueado (para el dashboard)
+    // MODO PRIVADO: Obtener configuración del usuario logueado
     const userId = await getUserId();
     if (!userId) {
       return NextResponse.json({ message: "No autorizado" }, { status: 401 });
     }
 
     const result = await db.execute(
-      `SELECT phone, whatsapp, show_phone, show_whatsapp, show_email
-       FROM users WHERE id = ?`,
+      `SELECT phone, whatsapp, show_phone, show_whatsapp, show_email FROM users WHERE id = ?`,
       [userId]
     );
 
@@ -100,7 +114,7 @@ export async function PUT(request: Request) {
     const { phone, whatsapp, show_phone, show_whatsapp, show_email } = body;
 
     await db.execute(
-      `UPDATE users 
+      `UPDATE users
        SET phone = ?, whatsapp = ?, show_phone = ?, show_whatsapp = ?, show_email = ?
        WHERE id = ?`,
       [
