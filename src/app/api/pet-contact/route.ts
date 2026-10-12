@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     const petId = searchParams.get("petId");
 
     if (petId) {
-      // MODO PÚBLICO: Obtener info completa de la mascota y contacto del dueño
+      // ✅ CAMBIO: Usar user_id en lugar de owner_id
       const result = await db.execute(
         `SELECT p.name as pet_name, p.public_id, p.species, p.breed, p.color, p.sex, p.microchip, 
                 p.status as pet_status, p.photo_url, p.created_at, 
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
                 u.name as owner_name, u.email as owner_email,
                 u.phone, u.whatsapp, u.show_phone, u.show_whatsapp, u.show_email
          FROM pets p
-         JOIN users u ON p.owner_id = u.id
+         JOIN users u ON p.user_id = u.id
          WHERE p.id = ? OR p.public_id = ?`,
         [petId, petId]
       );
@@ -71,7 +71,6 @@ export async function GET(request: Request) {
       });
     }
 
-    // MODO PRIVADO: Obtener configuración del usuario logueado
     const userId = await getUserId();
     if (!userId) {
       return NextResponse.json({ message: "No autorizado" }, { status: 401 });
@@ -99,7 +98,7 @@ export async function GET(request: Request) {
 
   } catch (error: any) {
     console.error("❌ Error en GET /api/pet-contact:", error);
-    return NextResponse.json({ message: "Error interno del servidor" }, { status: 500 });
+    return NextResponse.json({ message: "Error interno del servidor", details: error.message }, { status: 500 });
   }
 }
 
