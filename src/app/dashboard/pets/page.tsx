@@ -103,7 +103,6 @@ export default function DashboardPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      // ✅ FIX CLAVE: Actualizar formData inmediatamente para que se muestre en el modal
       setFormData(prev => ({ ...prev, photo: data.url }));
 
       if (cropPetId) {
@@ -180,7 +179,12 @@ export default function DashboardPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
-          <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesión</button>
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium">📋 Reportes</Link>
+            <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">⚙️ Contacto Público</Link>
+            <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">👤 Mi Perfil</Link>
+            <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesión</button>
+          </div>
         </div>
       </header>
 
@@ -217,18 +221,17 @@ export default function DashboardPage() {
                   <p>🐾 Especie: {pet.species}</p>
                   {pet.breed && <p>🦴 Raza: {pet.breed}</p>}
                   {pet.color && <p>🎨 Color: {pet.color}</p>}
-                  {pet.sex && <p>⚧ Sexo: {pet.sex}</p>}
+                  {pet.sex && <p> Sexo: {pet.sex}</p>}
                 </div>
 
-                {/* ✅ BOTONES RESTAURADOS */}
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <a href={`/pets/${pet.public_id}`} target="_blank" className="flex-1 bg-pink-600 text-white text-sm py-2 rounded hover:bg-pink-700 text-center">👁️ Ver Perfil</a>
-                    <button onClick={() => alert("QR: " + pet.public_id)} className="flex-1 bg-purple-600 text-white text-sm py-2 rounded hover:bg-purple-700"> Ver QR</button>
+                    <button onClick={() => alert("QR: " + pet.public_id)} className="flex-1 bg-purple-600 text-white text-sm py-2 rounded hover:bg-purple-700">📱 Ver QR</button>
                   </div>
                   <button onClick={() => openEditModal(pet)} className="w-full bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700">✏️ Editar</button>
-                  <button className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">📍 Ubicación</button>
-                  <button className="w-full bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700"> Historial</button>
+                  <button className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700"> Ubicación</button>
+                  <button className="w-full bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">📜 Historial</button>
                   <button className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700">💉 Vacunas</button>
                   <button className="w-full bg-red-100 text-red-600 text-sm py-2 rounded hover:bg-red-200">🗑️ Eliminar</button>
                 </div>
@@ -238,11 +241,10 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* Modal de Crop */}
       {showCropModal && cropImage && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center"> Ajusta la foto</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">📸 Ajusta la foto</h3>
             <div className="relative w-full h-80 mb-6 bg-gray-100 rounded-lg overflow-hidden">
               <Cropper image={cropImage} crop={crop} zoom={zoom} aspect={1} cropShape="round" onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} />
             </div>
@@ -256,18 +258,15 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Modal de Editar */}
       {editingPet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">✏️ Editar {editingPet.name}</h3>
             <form onSubmit={handleUpdatePet} className="space-y-4">
               
-              {/* Sección de foto */}
               <div className="bg-blue-50 p-4 rounded-lg border-2 border-dashed border-blue-300">
                 <label className="block text-sm font-medium text-gray-700 mb-2">📷 Foto</label>
                 
-                {/* ✅ FIX: Mostrar la foto actualizada inmediatamente */}
                 {formData.photo ? (
                   <div className="mb-3 flex items-center gap-4">
                     <div className="w-24 h-24 rounded-full border-4 border-blue-300 overflow-hidden shadow-lg">
@@ -307,7 +306,7 @@ export default function DashboardPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Especie *</label>
                   <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2">
-                    <option value="dog"> Perro</option>
+                    <option value="dog">🐶 Perro</option>
                     <option value="cat">🐱 Gato</option>
                     <option value="bird">🐦 Ave</option>
                     <option value="rabbit">🐰 Conejo</option>
@@ -337,7 +336,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex gap-3">
-                <button type="submit" className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700"> Guardar</button>
+                <button type="submit" className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700">💾 Guardar</button>
                 <button type="button" onClick={closeEditModal} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
               </div>
             </form>

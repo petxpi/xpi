@@ -134,7 +134,6 @@ export default function DashboardPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      // ✅ FIX: Actualizar formData.photo inmediatamente para que se muestre en el modal
       setFormData(prev => ({ ...prev, photo: data.url }));
 
       if (cropMode === "edit" && cropPetId) {
@@ -449,7 +448,7 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "🐦", rabbit: "", other: "🐾" };
+  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "🐦", rabbit: "🐰", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
@@ -474,8 +473,10 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-600"> XpiPet Dashboard</h1>
+          <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
+            {/* ✅ AQUÍ ESTÁ EL ENLACE A REPORTES */}
+            <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium">📋 Reportes</Link>
             <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">⚙️ Contacto Público</Link>
             <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">👤 Mi Perfil</Link>
             <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesión</button>
@@ -526,7 +527,7 @@ export default function DashboardPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Especie *</label>
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
-                  <option value="dog"> Perro</option>
+                  <option value="dog">🐶 Perro</option>
                   <option value="cat">🐱 Gato</option>
                   <option value="bird">🐦 Ave</option>
                   <option value="rabbit">🐰 Conejo</option>
@@ -597,7 +598,7 @@ export default function DashboardPage() {
                   )}
                   <div className="space-y-1 text-sm text-gray-600">
                     <p>🐾 Especie: {getSpeciesName(pet.species)}</p>
-                    {pet.breed && <p> Raza: {pet.breed}</p>}
+                    {pet.breed && <p>🦴 Raza: {pet.breed}</p>}
                     {pet.color && <p>🎨 Color: {pet.color}</p>}
                     {pet.sex && <p>⚧ Sexo: {getSexName(pet.sex)}</p>}
                   </div>
@@ -661,7 +662,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
             <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">{speciesEmoji[selectedPet.species] || ""} {selectedPet.name}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">{speciesEmoji[selectedPet.species] || "🐾"} {selectedPet.name}</h3>
               <p className="text-sm text-gray-500 mb-6">Código: <span className="font-mono font-bold text-purple-600">{selectedPet.public_id}</span></p>
               <div className="bg-white p-4 rounded-lg border-2 border-purple-200 inline-block mb-4">
                 <QRCodeSVG id={`qr-${selectedPet.public_id}`} value={`${typeof window !== 'undefined' ? window.location.origin : ''}/pets/${selectedPet.public_id}`} size={256} level="H" includeMargin={true} />
@@ -876,7 +877,7 @@ export default function DashboardPage() {
                             {vac.vet_name && (<div><p className="text-xs text-gray-500">Veterinario:</p><p className="font-semibold">{vac.vet_name}</p></div>)}
                             {vac.lot_number && (<div><p className="text-xs text-gray-500">Lote:</p><p className="font-mono text-xs">{vac.lot_number}</p></div>)}
                           </div>
-                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">️ Eliminar registro</button>
+                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">🗑️ Eliminar registro</button>
                         </div>
                       );
                     })}
