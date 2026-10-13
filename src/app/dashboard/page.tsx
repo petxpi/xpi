@@ -221,7 +221,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ status: "lost", lost_report: report }),
       });
       if (!response.ok) throw new Error("Error al reportar");
-      alert("🚨 Mascota reportada como PERDIDA");
+      alert(" Mascota reportada como PERDIDA");
       setShowLostModal(null);
       setLostReport("");
       loadPets();
@@ -448,7 +448,7 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "🐦", rabbit: "🐰", other: "🐾" };
+  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "🐦", rabbit: "🐰", other: "" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
@@ -475,8 +475,7 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
-            {/* ✅ AQUÍ ESTÁ EL ENLACE A REPORTES */}
-            <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium">📋 Reportes</Link>
+            <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium"> Reportes</Link>
             <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">⚙️ Contacto Público</Link>
             <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">👤 Mi Perfil</Link>
             <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesión</button>
@@ -499,7 +498,7 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold mb-4">Nueva Mascota</h3>
             <form onSubmit={handleCreatePet} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-dashed border-purple-300">
-                <label className="block text-sm font-medium text-gray-700 mb-2">📷 Foto de la mascota</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2"> Foto de la mascota</label>
                 <input type="file" accept="image/*" onChange={(e) => handlePhotoSelect(e, "create")} disabled={uploading} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" />
                 {formData.photo && !uploading && (
                   <div className="mt-3 flex items-center gap-4">
@@ -530,7 +529,7 @@ export default function DashboardPage() {
                   <option value="dog">🐶 Perro</option>
                   <option value="cat">🐱 Gato</option>
                   <option value="bird">🐦 Ave</option>
-                  <option value="rabbit">🐰 Conejo</option>
+                  <option value="rabbit"> Conejo</option>
                   <option value="other">Otro</option>
                 </select>
               </div>
@@ -580,6 +579,8 @@ export default function DashboardPage() {
                     <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || "🐾"} {pet.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${statusInfo.color}`}>{statusInfo.emoji} {statusInfo.text}</span>
                   </div>
+                  
+                  {/* ✅ FOTO CIRCULAR CENTRADA (como estaba originalmente) */}
                   <div className="mb-4 flex justify-center">
                     {pet.photo_url ? (
                       <div className="w-32 h-32 rounded-full border-4 border-purple-100 shadow-md overflow-hidden">
@@ -591,6 +592,7 @@ export default function DashboardPage() {
                       </div>
                     )}
                   </div>
+
                   {isLost && pet.lost_report && (
                     <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded mb-3 text-sm">
                       <strong>Reporte:</strong> {pet.lost_report}
@@ -614,6 +616,12 @@ export default function DashboardPage() {
                       <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">📜 Ver Historial</button>
                     </div>
                     <button onClick={() => openVaccines(pet)} className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700 mb-2 flex items-center justify-center gap-2">💉 Vacunas y Salud</button>
+                    
+                    {/* ✅ NUEVO BOTÓN: DIARIO DE VIDA */}
+                    <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">
+                       Diario de Vida
+                    </a>
+
                     {isLost ? (
                       <button onClick={() => reportFound(pet.id)} className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 mb-2">✅ Marcar como Encontrado</button>
                     ) : (
@@ -662,7 +670,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
             <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">{speciesEmoji[selectedPet.species] || "🐾"} {selectedPet.name}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">{speciesEmoji[selectedPet.species] || ""} {selectedPet.name}</h3>
               <p className="text-sm text-gray-500 mb-6">Código: <span className="font-mono font-bold text-purple-600">{selectedPet.public_id}</span></p>
               <div className="bg-white p-4 rounded-lg border-2 border-purple-200 inline-block mb-4">
                 <QRCodeSVG id={`qr-${selectedPet.public_id}`} value={`${typeof window !== 'undefined' ? window.location.origin : ''}/pets/${selectedPet.public_id}`} size={256} level="H" includeMargin={true} />
@@ -937,7 +945,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full">
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4">🚨</div>
+              <div className="text-6xl mb-4"></div>
               <h3 className="text-2xl font-bold text-red-600 mb-2">Reportar Mascota Perdida</h3>
               <p className="text-sm text-gray-600">Estás a punto de reportar a <strong>{showLostModal.name}</strong> como perdido</p>
             </div>
@@ -949,7 +957,7 @@ export default function DashboardPage() {
               <p className="text-sm text-red-800"><strong>⚠️ Importante:</strong> Esta información será visible públicamente para ayudar a encontrar a tu mascota.</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => { if (lostReport.trim()) reportLost(showLostModal.id, lostReport); else alert("Por favor describe lo sucedido"); }} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700">🚨 Reportar Perdido</button>
+              <button onClick={() => { if (lostReport.trim()) reportLost(showLostModal.id, lostReport); else alert("Por favor describe lo sucedido"); }} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700"> Reportar Perdido</button>
               <button onClick={() => { setShowLostModal(null); setLostReport(""); }} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
             </div>
           </div>
