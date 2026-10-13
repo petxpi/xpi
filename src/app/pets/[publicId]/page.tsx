@@ -104,8 +104,8 @@ export default function PetPublicProfile() {
     let msg = ` *¡HOLA! Encontré a ${pet.petName}*\n\n`;
     msg += ` *Información del reporte:*\n`;
     msg += `👤 Nombre: ${contactData.name}\n`;
-    msg += `📞 Teléfono: ${contactData.phone || "No proporcionado"}\n`;
-    msg += `📧 Email: ${contactData.email}\n`;
+    msg += ` Teléfono: ${contactData.phone || "No proporcionado"}\n`;
+    msg += ` Email: ${contactData.email}\n`;
     msg += `📍 Ubicación/Mensaje: ${contactData.message}\n\n`;
     if (photo) msg += `📩 *Foto adjunta:* (Verifica que se haya adjuntado la imagen)\n\n`;
     msg += `Por favor contáctame para coordinar la entrega. ¡Gracias!`;
@@ -124,7 +124,7 @@ export default function PetPublicProfile() {
 
   function sendViaEmail() {
     if (!contactData.name || !contactData.email || !contactData.message) {
-      alert("⚠️ Por favor completa al menos nombre, email y mensaje.");
+      alert("️ Por favor completa al menos nombre, email y mensaje.");
       return;
     }
     let body = `¡HOLA!\n\nEncontré a ${pet.petName} y quiero ayudarte.\n\n`;
@@ -133,24 +133,58 @@ export default function PetPublicProfile() {
     body += `👤 Nombre: ${contactData.name}\n📞 Teléfono: ${contactData.phone || "No proporcionado"}\n📧 Email: ${contactData.email}\n📍 Ubicación/Mensaje: ${contactData.message}\n\n`;
     if (photo) body += `📩 FOTO: (Adjunta manualmente en este correo)\n\n`;
     body += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPor favor contáctame para coordinar la entrega.\n\n---\nReporte generado por XpiPet\nCódigo: ${pet.publicId}\n`;
-    
+
     window.location.href = `mailto:${contactData.email}?subject=${encodeURIComponent(`🐾 ¡Encontré a ${pet.petName}! - XpiPet`)}&body=${encodeURIComponent(body)}`;
     if (photo) setTimeout(() => alert("📩 No olvides adjuntar la foto manualmente en tu correo."), 1000);
   }
 
+  // ✅ CAMBIO QUIRÚRGICO: Ahora guarda en BD y notifica al dueño
   async function handleContactSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setContactSent(true);
-    setTimeout(() => {
-      setShowContactForm(false);
-      setContactSent(false);
-      setContactData({ name: "", email: "", message: "", phone: "" });
-      setPhoto(null);
-      setPhotoFileName("");
-    }, 5000);
+    
+    try {
+      // 1. Preparar datos del reporte
+      const reportData = {
+        petId: publicId,
+        finderName: contactData.name,
+        finderEmail: contactData.email,
+        finderPhone: contactData.phone || null,
+        description: contactData.message,
+        photoUrl: photo,
+        lat: null,
+        lng: null,
+      };
+
+      // 2. Enviar al endpoint para guardar en BD y notificar al dueño
+      const response = await fetch("/api/found-reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reportData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al guardar el reporte");
+      }
+
+      // 3. Mostrar mensaje de éxito
+      setContactSent(true);
+      
+      // 4. Limpiar después de 5 segundos
+      setTimeout(() => {
+        setShowContactForm(false);
+        setContactSent(false);
+        setContactData({ name: "", email: "", message: "", phone: "" });
+        setPhoto(null);
+        setPhotoFileName("");
+      }, 5000);
+
+    } catch (err: any) {
+      console.error("Error al enviar reporte:", err);
+      alert("❌ Error al enviar el reporte. Por favor intenta de nuevo.");
+    }
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "🐦", rabbit: "🐰", other: "🐾" };
+  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "", bird: "🐦", rabbit: "🐰", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
 
@@ -182,7 +216,7 @@ export default function PetPublicProfile() {
         {isLost && pet.lostReport && (
           <div className="bg-red-50 border-2 border-red-300 rounded-xl p-6 mb-6 animate-pulse">
             <div className="flex items-start gap-4">
-              <div className="text-5xl">🚨</div>
+              <div className="text-5xl"></div>
               <div className="flex-1">
                 <h2 className="text-xl font-bold text-red-700 mb-2">¡{pet.petName} está PERDIDO!</h2>
                 <p className="text-red-600 mb-3">{pet.lostReport}</p>
@@ -198,7 +232,7 @@ export default function PetPublicProfile() {
                 <img src={pet.petPhotoUrl} alt={pet.petName} className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="text-8xl mb-2">{speciesEmoji[pet.species] || "🐾"}</div>
+              <div className="text-8xl mb-2">{speciesEmoji[pet.species] || ""}</div>
             )}
             <h1 className="text-4xl font-bold text-white mb-2">{pet.petName}</h1>
             <p className="text-purple-100">{speciesNames[pet.species] || pet.species}{pet.breed && ` • ${pet.breed}`}</p>
@@ -262,7 +296,7 @@ export default function PetPublicProfile() {
         </div>
       </main>
 
-      {/* Modal de Cámara (sin cambios funcionales, solo estructura) */}
+      {/* Modal de Cámara */}
       {showCamera && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4">
           <div className="bg-gray-900 rounded-xl shadow-2xl p-6 max-w-2xl w-full">
@@ -282,7 +316,7 @@ export default function PetPublicProfile() {
                 </div>
                 <canvas ref={canvasRef} className="hidden" />
                 <div className="flex gap-3">
-                  <button onClick={capturePhoto} className="flex-1 bg-red-600 text-white py-4 rounded-lg hover:bg-red-700 font-bold text-lg">📩 Capturar foto</button>
+                  <button onClick={capturePhoto} className="flex-1 bg-red-600 text-white py-4 rounded-lg hover:bg-red-700 font-bold text-lg"> Capturar foto</button>
                   <button onClick={closeCamera} className="bg-gray-700 text-white px-6 py-4 rounded-lg hover:bg-gray-600 font-semibold">Cancelar</button>
                 </div>
               </>
@@ -305,12 +339,13 @@ export default function PetPublicProfile() {
               <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
                 <div className="text-5xl mb-2">✅</div>
                 <p className="text-green-700 font-semibold text-lg mb-2">¡Gracias por tu ayuda!</p>
+                <p className="text-sm text-green-600 mb-4">El dueño ha sido notificado y verá tu reporte en su dashboard.</p>
                 <button onClick={() => setShowContactForm(false)} className="mt-4 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-semibold">Cerrar</button>
               </div>
             ) : (
               <form onSubmit={handleContactSubmit} className="space-y-4">
                 <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                  <label className="block text-sm font-bold text-indigo-900 mb-3">📩 Foto de {pet.petName} (opcional)</label>
+                  <label className="block text-sm font-bold text-indigo-900 mb-3"> Foto de {pet.petName} (opcional)</label>
                   <input type="file" ref={galleryInputRef} accept="image/*" onChange={handlePhotoSelect} className="hidden" />
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <button type="button" onClick={openCamera} className="bg-indigo-600 text-white py-2 px-3 rounded-lg hover:bg-indigo-700 font-semibold text-sm">📸 Tomar foto</button>
@@ -319,7 +354,7 @@ export default function PetPublicProfile() {
                   {photo && (
                     <div className="relative mt-3">
                       <img src={photo} alt="Foto" className="w-full h-48 object-cover rounded-lg border-2 border-indigo-200" />
-                      <button type="button" onClick={() => { setPhoto(null); setPhotoFileName(""); }} className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700 font-bold">✖</button>
+                      <button type="button" onClick={() => { setPhoto(null); setPhotoFileName(""); }} className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700 font-bold"></button>
                       <p className="text-xs text-indigo-700 mt-2 text-center">📎 {photoFileName}</p>
                     </div>
                   )}
@@ -331,8 +366,8 @@ export default function PetPublicProfile() {
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">¿Dónde encontraste a {pet.petName}? *</label><textarea required rows={3} value={contactData.message} onChange={(e) => setContactData({ ...contactData, message: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" placeholder="Ej: La encontré en el parque..." /></div>
 
                 <div className="space-y-2 pt-4 border-t border-gray-200">
-                  <button type="button" onClick={sendViaWhatsApp} className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2">📱 Enviar por WhatsApp</button>
-                  <button type="button" onClick={sendViaEmail} className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center gap-2">📧 Enviar por correo</button>
+                  <button type="button" onClick={sendViaWhatsApp} className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2"> Enviar por WhatsApp</button>
+                  <button type="button" onClick={sendViaEmail} className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center gap-2"> Enviar por correo</button>
                   <div className="flex gap-3 pt-2">
                     <button type="submit" className="flex-1 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 font-semibold">💾 Guardar reporte</button>
                     <button type="button" onClick={() => setShowContactForm(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
