@@ -30,6 +30,9 @@ export default function PetPublicProfile() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loadingDiary, setLoadingDiary] = useState(false);
 
+  // 🩺 NUEVO: Estado para el veterinario
+  const [vet, setVet] = useState<any>(null);
+
   useEffect(() => {
     loadPet();
     return () => {
@@ -51,6 +54,17 @@ export default function PetPublicProfile() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Mascota no encontrada");
       setPet(data);
+
+      // 🩺 NUEVO: Cargar veterinario
+      try {
+        const vetResponse = await fetch(`/api/veterinarians?petId=${data.petId}`);
+        const vetData = await vetResponse.json();
+        if (vetData.vet) {
+          setVet(vetData.vet);
+        }
+      } catch (err) {
+        console.error("Error al cargar veterinario:", err);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -72,8 +86,8 @@ export default function PetPublicProfile() {
       const milestonesData = await milestonesRes.json();
       const docsData = await docsRes.json();
 
-      console.log(" Fotos:", photosData.photos);
-      console.log("📖 Hitos:", milestonesData.milestones);
+      console.log("📸 Fotos:", photosData.photos);
+      console.log(" Hitos:", milestonesData.milestones);
       console.log("📄 Documentos:", docsData.documents);
 
       setPhotos(photosData.photos || []);
@@ -319,6 +333,62 @@ export default function PetPublicProfile() {
                     <div className="flex justify-between py-2 border-b border-gray-100"><span className="text-gray-600">Codigo</span><span className="font-semibold text-purple-600 font-mono">{pet.publicId}</span></div>
                     <div className="flex justify-between py-2"><span className="text-gray-600">Registrado</span><span className="font-semibold text-gray-800">{new Date(pet.createdAt).toLocaleDateString("es-CO")}</span></div>
                   </div>
+
+                  {/*  NUEVO: Sección del Veterinario */}
+                  {vet && (
+                    <div className="mt-6 bg-orange-50 border-2 border-orange-200 rounded-xl p-5">
+                      <h4 className="text-lg font-bold text-orange-800 mb-3 flex items-center gap-2">
+                        🩺 Veterinario de cabecera
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-start gap-2">
+                          <span className="text-orange-600 font-semibold">👤</span>
+                          <div>
+                            <p className="text-xs text-gray-500">Doctor(a)</p>
+                            <p className="font-semibold text-gray-800">{vet.vet_name}</p>
+                          </div>
+                        </div>
+                        {vet.clinic_name && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-orange-600 font-semibold"></span>
+                            <div>
+                              <p className="text-xs text-gray-500">Clínica</p>
+                              <p className="font-semibold text-gray-800">{vet.clinic_name}</p>
+                            </div>
+                          </div>
+                        )}
+                        {vet.phone && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-orange-600 font-semibold">📞</span>
+                            <div>
+                              <p className="text-xs text-gray-500">Teléfono</p>
+                              <a href={`tel:${vet.phone}`} className="font-semibold text-orange-700 hover:text-orange-900 hover:underline">
+                                {vet.phone}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                        {vet.address && (
+                          <div className="flex items-start gap-2">
+                            <span className="text-orange-600 font-semibold">📍</span>
+                            <div>
+                              <p className="text-xs text-gray-500">Dirección</p>
+                              <p className="font-semibold text-gray-800">{vet.address}</p>
+                            </div>
+                          </div>
+                        )}
+                        {vet.notes && (
+                          <div className="flex items-start gap-2 mt-3 pt-3 border-t border-orange-200">
+                            <span className="text-orange-600 font-semibold"></span>
+                            <div>
+                              <p className="text-xs text-gray-500">Notas</p>
+                              <p className="text-gray-700 italic">{vet.notes}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>

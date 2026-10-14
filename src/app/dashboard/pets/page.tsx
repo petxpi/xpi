@@ -25,6 +25,13 @@ export default function DashboardPage() {
     lot_number: "",
     vet_name: "",
   });
+
+  //  NUEVOS ESTADOS: Veterinario
+  const [showVet, setShowVet] = useState(false);
+  const [selectedPetForVet, setSelectedPetForVet] = useState<any>(null);
+  const [vetData, setVetData] = useState({ vetName: "", clinicName: "", phone: "", address: "", notes: "" });
+  const [loadingVet, setLoadingVet] = useState(false);
+
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [locationHistory, setLocationHistory] = useState<any[]>([]);
   const [addressCache, setAddressCache] = useState<Record<string, string>>({});
@@ -443,12 +450,87 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message || "Error al eliminar vacuna"); }
   }
 
+  // 🩺 FUNCIONES VETERINARIO
+  async function openVet(pet: any) {
+    setSelectedPetForVet(pet);
+    setShowVet(true);
+    setLoadingVet(true);
+    setVetData({ vetName: "", clinicName: "", phone: "", address: "", notes: "" });
+    
+    try {
+      const response = await fetch(`/api/veterinarians?petId=${pet.id}`);
+      const data = await response.json();
+      if (data.vet) {
+        setVetData({
+          vetName: data.vet.vet_name || "",
+          clinicName: data.vet.clinic_name || "",
+          phone: data.vet.phone || "",
+          address: data.vet.address || "",
+          notes: data.vet.notes || "",
+        });
+      }
+    } catch (err) {
+      console.error("Error al cargar veterinario:", err);
+    } finally {
+      setLoadingVet(false);
+    }
+  }
+
+  async function handleSaveVet(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedPetForVet) return;
+    
+    try {
+      const response = await fetch("/api/veterinarians", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          petId: selectedPetForVet.id,
+          vetName: vetData.vetName,
+          clinicName: vetData.clinicName,
+          phone: vetData.phone,
+          address: vetData.address,
+          notes: vetData.notes,
+        }),
+      });
+      
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      
+      alert("✅ Veterinario guardado correctamente");
+      setShowVet(false);
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
+  }
+
+  async function handleDeleteVet() {
+    if (!selectedPetForVet) return;
+    if (!confirm("¿Eliminar el veterinario registrado?")) return;
+    
+    try {
+      const response = await fetch("/api/veterinarians", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ petId: selectedPetForVet.id }),
+      });
+      
+      if (!response.ok) throw new Error("Error al eliminar");
+      
+      alert("Veterinario eliminado");
+      setShowVet(false);
+      setVetData({ vetName: "", clinicName: "", phone: "", address: "", notes: "" });
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
+  }
+
   function handleLogout() {
     document.cookie = "auth-token=; path=/; max-age=0";
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "🐦", rabbit: "", other: "🐾" };
+  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "", bird: "🐦", rabbit: "🐰", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
@@ -476,7 +558,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
             <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium">📋 Reportes</Link>
-            <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">️ Contacto Público</Link>
+            <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">⚙️ Contacto Público</Link>
             <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">👤 Mi Perfil</Link>
             <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesión</button>
           </div>
@@ -529,7 +611,7 @@ export default function DashboardPage() {
                   <option value="dog">🐶 Perro</option>
                   <option value="cat">🐱 Gato</option>
                   <option value="bird">🐦 Ave</option>
-                  <option value="rabbit">🐰 Conejo</option>
+                  <option value="rabbit"> Conejo</option>
                   <option value="other">Otro</option>
                 </select>
               </div>
@@ -564,7 +646,7 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-center py-8">Cargando mascotas...</p>
         ) : pets.length === 0 ? (
           <div className="bg-white rounded-xl shadow p-12 text-center">
-            <p className="text-6xl mb-4">🐾</p>
+            <p className="text-6xl mb-4"></p>
             <p className="text-gray-600 mb-4">Aún no tienes mascotas registradas</p>
             <button onClick={() => setShowForm(true)} className="text-purple-600 font-semibold hover:underline">Agregar tu primera mascota</button>
           </div>
@@ -579,6 +661,8 @@ export default function DashboardPage() {
                     <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || "🐾"} {pet.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${statusInfo.color}`}>{statusInfo.emoji} {statusInfo.text}</span>
                   </div>
+                  
+                  {/* ✅ FOTO CIRCULAR CENTRADA */}
                   <div className="mb-4 flex justify-center">
                     {pet.photo_url ? (
                       <div className="w-32 h-32 rounded-full border-4 border-purple-100 shadow-md overflow-hidden">
@@ -586,10 +670,11 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-4xl border-4 border-gray-100">
-                        {speciesEmoji[pet.species] || ""}
+                        {speciesEmoji[pet.species] || "🐾"}
                       </div>
                     )}
                   </div>
+
                   {isLost && pet.lost_report && (
                     <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded mb-3 text-sm">
                       <strong>Reporte:</strong> {pet.lost_report}
@@ -609,15 +694,16 @@ export default function DashboardPage() {
                       <button onClick={() => openEditModal(pet)} className="flex-1 bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700">✏️ Editar</button>
                     </div>
                     <div className="flex gap-2 mb-2">
-                      <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700"> Ver Ubicación</button>
+                      <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">📍 Ver Ubicación</button>
                       <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">📜 Ver Historial</button>
                     </div>
                     <button onClick={() => openVaccines(pet)} className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700 mb-2 flex items-center justify-center gap-2">💉 Vacunas y Salud</button>
                     
-                    {/* ✅ NUEVO BOTÓN: DIARIO DE VIDA */}
-                    <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">
-                      📖 Diario de Vida
-                    </a>
+                    {/* 🩺 NUEVO BOTÓN: VETERINARIO */}
+                    <button onClick={() => openVet(pet)} className="w-full bg-orange-500 text-white text-sm py-2 rounded hover:bg-orange-600 mb-2 flex items-center justify-center gap-2 font-semibold"> Veterinario</button>
+
+                    {/* ✅ BOTÓN: DIARIO DE VIDA */}
+                    <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold"> Diario de Vida</a>
 
                     {isLost ? (
                       <button onClick={() => reportFound(pet.id)} className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 mb-2">✅ Marcar como Encontrado</button>
@@ -650,7 +736,7 @@ export default function DashboardPage() {
               <Cropper image={cropImage} crop={crop} zoom={zoom} aspect={1} cropShape="round" onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} />
             </div>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2"> Zoom: {Math.round(zoom * 100)}%</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">🔍 Zoom: {Math.round(zoom * 100)}%</label>
               <input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
             </div>
             <div className="flex gap-3">
@@ -731,7 +817,7 @@ export default function DashboardPage() {
                   <option value="">Seleccionar...</option>
                   <option value="dog">🐶 Perro</option>
                   <option value="cat">🐱 Gato</option>
-                  <option value="bird">🐦 Ave</option>
+                  <option value="bird"> Ave</option>
                   <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
                 </select>
@@ -769,7 +855,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">📍 Ubicación de {showMap.name}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2"> Ubicación de {showMap.name}</h3>
               <p className="text-sm text-gray-500">Última actualización: {showMap.last_location_updated_at || "Nunca"}</p>
             </div>
             <div className="border-2 border-purple-200 rounded-lg overflow-hidden mb-6">
@@ -815,7 +901,7 @@ export default function DashboardPage() {
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <p className="text-sm font-bold text-purple-700">📍 Ubicación #{locationHistory.length - index}</p>
-                          <p className="text-xs text-gray-600 font-mono mt-1">🌐 Lat: {lat.toFixed(6)}, Lng: {lng.toFixed(6)}</p>
+                          <p className="text-xs text-gray-600 font-mono mt-1"> Lat: {lat.toFixed(6)}, Lng: {lng.toFixed(6)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500">{new Date(loc.created_at || loc.recorded_at).toLocaleString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
@@ -882,7 +968,7 @@ export default function DashboardPage() {
                             {vac.vet_name && (<div><p className="text-xs text-gray-500">Veterinario:</p><p className="font-semibold">{vac.vet_name}</p></div>)}
                             {vac.lot_number && (<div><p className="text-xs text-gray-500">Lote:</p><p className="font-mono text-xs">{vac.lot_number}</p></div>)}
                           </div>
-                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">️ Eliminar registro</button>
+                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">🗑️ Eliminar registro</button>
                         </div>
                       );
                     })}
@@ -932,6 +1018,107 @@ export default function DashboardPage() {
                   <button type="submit" className="flex-1 bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 font-semibold">💾 Guardar vacuna</button>
                   <button type="button" onClick={() => setShowAddVaccine(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
                 </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 🩺 MODAL VETERINARIO */}
+      {showVet && selectedPetForVet && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-lg w-full max-h-[95vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800">🩺 Veterinario de {selectedPetForVet.name}</h3>
+                <p className="text-sm text-gray-500">Datos del veterinario de cabecera</p>
+              </div>
+              <button onClick={() => setShowVet(false)} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
+            </div>
+
+            {loadingVet ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mx-auto mb-3"></div>
+                <p className="text-gray-600">Cargando...</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveVet} className="space-y-4">
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                  <p className="text-sm text-orange-800">
+                    💡 <strong>Tip:</strong> Este es el veterinario principal de tu mascota. Se mostrará en su perfil público para emergencias.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del veterinario *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={vetData.vetName} 
+                    onChange={(e) => setVetData({ ...vetData, vetName: e.target.value })} 
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:border-orange-500 focus:outline-none" 
+                    placeholder="Dr. Juan Pérez" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la clínica</label>
+                  <input 
+                    type="text" 
+                    value={vetData.clinicName} 
+                    onChange={(e) => setVetData({ ...vetData, clinicName: e.target.value })} 
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:border-orange-500 focus:outline-none" 
+                    placeholder="Clínica Veterinaria San Roque" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                  <input 
+                    type="tel" 
+                    value={vetData.phone} 
+                    onChange={(e) => setVetData({ ...vetData, phone: e.target.value })} 
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:border-orange-500 focus:outline-none" 
+                    placeholder="300 123 4567" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                  <input 
+                    type="text" 
+                    value={vetData.address} 
+                    onChange={(e) => setVetData({ ...vetData, address: e.target.value })} 
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:border-orange-500 focus:outline-none" 
+                    placeholder="Calle 45 #12-34, Bogotá" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notas (horarios, especialidad, etc.)</label>
+                  <textarea 
+                    rows={3} 
+                    value={vetData.notes} 
+                    onChange={(e) => setVetData({ ...vetData, notes: e.target.value })} 
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:border-orange-500 focus:outline-none" 
+                    placeholder="Ej: Atiende de lunes a sábado de 8am a 6pm. Especialista en cardiología." 
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button type="submit" className="flex-1 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 font-semibold">💾 Guardar</button>
+                  <button type="button" onClick={() => setShowVet(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
+                </div>
+
+                {vetData.vetName && (
+                  <button 
+                    type="button" 
+                    onClick={handleDeleteVet} 
+                    className="w-full bg-red-100 text-red-600 py-2 rounded-lg hover:bg-red-200 text-sm font-semibold"
+                  >
+                    🗑️ Eliminar veterinario registrado
+                  </button>
+                )}
               </form>
             )}
           </div>
