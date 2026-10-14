@@ -30,8 +30,11 @@ export default function PetPublicProfile() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loadingDiary, setLoadingDiary] = useState(false);
 
-  // 🩺 Estado para el veterinario
+  //  Estado para el veterinario
   const [vet, setVet] = useState<any>(null);
+
+  // ⚠️ Estado para las alergias
+  const [allergies, setAllergies] = useState<any[]>([]);
 
   useEffect(() => {
     loadPet();
@@ -48,7 +51,7 @@ export default function PetPublicProfile() {
     }
   }, [activeTab, pet]);
 
-  // ✅ MODIFICADO: Ahora pide solo veterinarios públicos
+  // ✅ MODIFICADO: Ahora carga veterinario y alergias públicas
   async function loadPet() {
     try {
       const response = await fetch(`/api/pet-contact?petId=${publicId}`);
@@ -58,15 +61,22 @@ export default function PetPublicProfile() {
 
       // 🩺 Cargar veterinario SOLO si es público
       try {
-        console.log("🩺 Buscando veterinario público para:", publicId);
         const vetResponse = await fetch(`/api/veterinarians?petId=${publicId}&public=true`);
         const vetData = await vetResponse.json();
-        console.log("🩺 Veterinario recibido:", vetData);
         if (vetData.vet) {
           setVet(vetData.vet);
         }
       } catch (err) {
         console.error("Error al cargar veterinario:", err);
+      }
+
+      // ⚠️ NUEVO: Cargar alergias públicas
+      try {
+        const allergiesResponse = await fetch(`/api/pet-allergies?petId=${publicId}&public=true`);
+        const allergiesData = await allergiesResponse.json();
+        setAllergies(allergiesData.allergies || []);
+      } catch (err) {
+        console.error("Error al cargar alergias:", err);
       }
     } catch (err: any) {
       setError(err.message);
@@ -252,6 +262,25 @@ export default function PetPublicProfile() {
     other: "Otro",
   };
 
+  // ⚠️ Labels para alergias
+  const allergyTypeLabels: Record<string, string> = {
+    food: "🍖 Alimento",
+    medication: "💊 Medicamento",
+    environmental: "🌿 Ambiental",
+  };
+
+  const severityConfig: Record<string, { color: string; emoji: string }> = {
+    mild: { color: "bg-yellow-100 text-yellow-800", emoji: "⚠️" },
+    moderate: { color: "bg-orange-100 text-orange-800", emoji: "⚠️" },
+    severe: { color: "bg-red-100 text-red-800", emoji: "🚨" },
+  };
+
+  const severityLabels: Record<string, string> = {
+    mild: "Leve",
+    moderate: "Moderada",
+    severe: "Grave",
+  };
+
   if (loading) return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center"><p className="text-purple-600 font-semibold">Cargando perfil...</p></div>;
   if (error || !pet) return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
@@ -321,6 +350,46 @@ export default function PetPublicProfile() {
             {activeTab === "info" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
+                  {/* ⚠️ ALERTA DE ALERGIAS - Se muestra solo si hay alergias públicas */}
+                  {allergies.length > 0 && (
+                    <div className="mb-6 bg-red-50 border-2 border-red-400 rounded-xl p-5">
+                      <h4 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">
+                        ⚠️ Alergias conocidas
+                      </h4>
+                      <div className="space-y-3">
+                        {allergies.map((allergy: any) => {
+                          const severity = severityConfig[allergy.severity] || severityConfig.moderate;
+                          return (
+                            <div key={allergy.id} className="bg-white border border-red-200 rounded-lg p-3">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">
+                                  {allergyTypeLabels[allergy.allergy_type] || allergy.allergy_type}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${severity.color}`}>
+                                  {severity.emoji} {severityLabels[allergy.severity] || allergy.severity}
+                                </span>
+                              </div>
+                              <p className="font-bold text-red-900 text-base"> {allergy.allergen}</p>
+                              {allergy.symptoms && (
+                                <p className="text-sm text-gray-700 mt-2">
+                                  <span className="font-semibold text-gray-600">Síntomas:</span> {allergy.symptoms}
+                                </p>
+                              )}
+                              {allergy.treatment && (
+                                <p className="text-sm text-gray-700 mt-1">
+                                  <span className="font-semibold text-gray-600">Qué hacer:</span> {allergy.treatment}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-red-600 mt-3 italic">
+                        ⚠️ Esta información es crítica. Por favor, tenla en cuenta si vas a darle comida o medicamentos.
+                      </p>
+                    </div>
+                  )}
+
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Informacion</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between py-2 border-b border-gray-100"><span className="text-gray-600">Especie</span><span className="font-semibold text-gray-800">{speciesNames[pet.species] || pet.species}</span></div>
@@ -332,7 +401,7 @@ export default function PetPublicProfile() {
                     <div className="flex justify-between py-2"><span className="text-gray-600">Registrado</span><span className="font-semibold text-gray-800">{new Date(pet.createdAt).toLocaleDateString("es-CO")}</span></div>
                   </div>
 
-                  {/* 🩺 Sección del Veterinario - SOLO SE MUESTRA SI ES PÚBLICO */}
+                  {/*  Sección del Veterinario - SOLO SE MUESTRA SI ES PÚBLICO */}
                   {vet && (
                     <div className="mt-6 bg-orange-50 border-2 border-orange-200 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-orange-800 mb-3 flex items-center gap-2">
@@ -340,7 +409,7 @@ export default function PetPublicProfile() {
                       </h4>
                       <div className="space-y-2 text-sm">
                         <div className="flex items-start gap-2">
-                          <span className="text-orange-600 font-semibold">👤</span>
+                          <span className="text-orange-600 font-semibold"></span>
                           <div>
                             <p className="text-xs text-gray-500">Doctor(a)</p>
                             <p className="font-semibold text-gray-800">{vet.vet_name}</p>
@@ -357,7 +426,7 @@ export default function PetPublicProfile() {
                         )}
                         {vet.phone && (
                           <div className="flex items-start gap-2">
-                            <span className="text-orange-600 font-semibold">📞</span>
+                            <span className="text-orange-600 font-semibold"></span>
                             <div>
                               <p className="text-xs text-gray-500">Teléfono</p>
                               <a href={`tel:${vet.phone}`} className="font-semibold text-orange-700 hover:text-orange-900 hover:underline">
@@ -377,7 +446,7 @@ export default function PetPublicProfile() {
                         )}
                         {vet.notes && (
                           <div className="flex items-start gap-2 mt-3 pt-3 border-t border-orange-200">
-                            <span className="text-orange-600 font-semibold"></span>
+                            <span className="text-orange-600 font-semibold">📝</span>
                             <div>
                               <p className="text-xs text-gray-500">Notas</p>
                               <p className="text-gray-700 italic">{vet.notes}</p>

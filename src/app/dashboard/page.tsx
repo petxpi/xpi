@@ -26,12 +26,26 @@ export default function DashboardPage() {
     vet_name: "",
   });
 
-  //  ESTADOS VETERINARIO
+  // 🩺 ESTADOS VETERINARIO
   const [showVet, setShowVet] = useState(false);
   const [selectedPetForVet, setSelectedPetForVet] = useState<any>(null);
   const [vetData, setVetData] = useState({ vetName: "", clinicName: "", phone: "", address: "", notes: "" });
   const [loadingVet, setLoadingVet] = useState(false);
-  const [vetIsPublic, setVetIsPublic] = useState(true); // 🔒 NUEVO: Control de visibilidad
+  const [vetIsPublic, setVetIsPublic] = useState(true);
+
+  // ⚠️ ESTADOS ALERGIAS
+  const [showAllergies, setShowAllergies] = useState(false);
+  const [selectedPetForAllergies, setSelectedPetForAllergies] = useState<any>(null);
+  const [allergies, setAllergies] = useState<any[]>([]);
+  const [showAddAllergy, setShowAddAllergy] = useState(false);
+  const [allergyForm, setAllergyForm] = useState({
+    allergyType: "food",
+    allergen: "",
+    severity: "moderate",
+    symptoms: "",
+    treatment: "",
+    isPublic: true,
+  });
 
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [locationHistory, setLocationHistory] = useState<any[]>([]);
@@ -451,13 +465,13 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message || "Error al eliminar vacuna"); }
   }
 
-  // 🩺 FUNCIONES VETERINARIO (MODIFICADAS)
+  // 🩺 FUNCIONES VETERINARIO
   async function openVet(pet: any) {
     setSelectedPetForVet(pet);
     setShowVet(true);
     setLoadingVet(true);
     setVetData({ vetName: "", clinicName: "", phone: "", address: "", notes: "" });
-    setVetIsPublic(true); // Por defecto público
+    setVetIsPublic(true);
     
     try {
       const response = await fetch(`/api/veterinarians?petId=${pet.id}`);
@@ -470,7 +484,6 @@ export default function DashboardPage() {
           address: data.vet.address || "",
           notes: data.vet.notes || "",
         });
-        // 🔒 Cargar estado de visibilidad (1 = público, 0 = privado)
         setVetIsPublic(data.vet.public === 1);
       }
     } catch (err) {
@@ -495,7 +508,7 @@ export default function DashboardPage() {
           phone: vetData.phone,
           address: vetData.address,
           notes: vetData.notes,
-          isPublic: vetIsPublic, // 🔒 NUEVO: Enviar estado de visibilidad
+          isPublic: vetIsPublic,
         }),
       });
       
@@ -531,12 +544,97 @@ export default function DashboardPage() {
     }
   }
 
+  // ️ FUNCIONES ALERGIAS
+  async function openAllergies(pet: any) {
+    setSelectedPetForAllergies(pet);
+    setShowAllergies(true);
+    setShowAddAllergy(false);
+    setAllergies([]);
+    await loadAllergies(pet.id);
+  }
+
+  async function loadAllergies(petId: string) {
+    try {
+      const response = await fetch(`/api/pet-allergies?petId=${petId}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Error al cargar alergias");
+      setAllergies(data.allergies || []);
+    } catch (err: any) {
+      console.error("Error:", err);
+      alert(err.message || "Error al cargar alergias");
+    }
+  }
+
+  async function handleAddAllergy(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedPetForAllergies) { alert("Error: No hay mascota seleccionada"); return; }
+    if (!allergyForm.allergen.trim()) { alert("Debes indicar el alérgeno"); return; }
+    
+    try {
+      const response = await fetch("/api/pet-allergies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          petId: selectedPetForAllergies.id,
+          allergyType: allergyForm.allergyType,
+          allergen: allergyForm.allergen,
+          severity: allergyForm.severity,
+          symptoms: allergyForm.symptoms,
+          treatment: allergyForm.treatment,
+          isPublic: allergyForm.isPublic,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Error al registrar alergia");
+      alert("✅ Alergia registrada correctamente");
+      setShowAddAllergy(false);
+      setAllergyForm({
+        allergyType: "food",
+        allergen: "",
+        severity: "moderate",
+        symptoms: "",
+        treatment: "",
+        isPublic: true,
+      });
+      await loadAllergies(selectedPetForAllergies.id);
+    } catch (err: any) {
+      console.error("Error:", err);
+      alert(err.message || "Error al registrar alergia");
+    }
+  }
+
+  async function handleDeleteAllergy(allergyId: string) {
+    if (!confirm("¿Estás seguro de eliminar esta alergia?")) return;
+    try {
+      const response = await fetch("/api/pet-allergies", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allergyId, petId: selectedPetForAllergies.id }),
+      });
+      if (!response.ok) throw new Error("Error al eliminar");
+      await loadAllergies(selectedPetForAllergies.id);
+    } catch (err: any) { alert(err.message || "Error al eliminar alergia"); }
+  }
+
+  async function handleToggleAllergyPublic(allergyId: string) {
+    try {
+      const response = await fetch("/api/pet-allergies", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allergyId, petId: selectedPetForAllergies.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      await loadAllergies(selectedPetForAllergies.id);
+    } catch (err: any) { alert(err.message || "Error al cambiar visibilidad"); }
+  }
+
   function handleLogout() {
     document.cookie = "auth-token=; path=/; max-age=0";
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "🐦", rabbit: "🐰", other: "" };
+  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "🐦", rabbit: "", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
@@ -552,18 +650,36 @@ export default function DashboardPage() {
     const nextDate = new Date(nextDue);
     const today = new Date();
     const diffDays = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} días)`, emoji: "️" };
-    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Próxima (${diffDays} días)`, emoji: "⏰" };
+    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} días)`, emoji: "⚠️" };
+    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Próxima (${diffDays} días)`, emoji: "" };
     return { color: "bg-green-100 text-green-700", text: `Al día (${diffDays} días)`, emoji: "✅" };
   }
+
+  const allergyTypeLabels: Record<string, string> = {
+    food: "🍖 Alimento",
+    medication: "💊 Medicamento",
+    environmental: "🌿 Ambiental",
+  };
+
+  const severityConfig: Record<string, { color: string; emoji: string }> = {
+    mild: { color: "bg-yellow-100 text-yellow-800", emoji: "⚠️" },
+    moderate: { color: "bg-orange-100 text-orange-800", emoji: "⚠️" },
+    severe: { color: "bg-red-100 text-red-800", emoji: "🚨" },
+  };
+
+  const severityLabels: Record<string, string> = {
+    mild: "Leve",
+    moderate: "Moderada",
+    severe: "Grave",
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
+          <h1 className="text-2xl font-bold text-purple-600"> XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium"> Reportes</Link>
+            <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium">📋 Reportes</Link>
             <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">⚙️ Contacto Público</Link>
             <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">👤 Mi Perfil</Link>
             <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesión</button>
@@ -586,7 +702,7 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold mb-4">Nueva Mascota</h3>
             <form onSubmit={handleCreatePet} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-dashed border-purple-300">
-                <label className="block text-sm font-medium text-gray-700 mb-2"> Foto de la mascota</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">📷 Foto de la mascota</label>
                 <input type="file" accept="image/*" onChange={(e) => handlePhotoSelect(e, "create")} disabled={uploading} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" />
                 {formData.photo && !uploading && (
                   <div className="mt-3 flex items-center gap-4">
@@ -615,9 +731,9 @@ export default function DashboardPage() {
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
                   <option value="dog">🐶 Perro</option>
-                  <option value="cat">🐱 Gato</option>
+                  <option value="cat"> Gato</option>
                   <option value="bird">🐦 Ave</option>
-                  <option value="rabbit"> Conejo</option>
+                  <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
                 </select>
               </div>
@@ -686,15 +802,15 @@ export default function DashboardPage() {
                     </div>
                   )}
                   <div className="space-y-1 text-sm text-gray-600">
-                    <p> Especie: {getSpeciesName(pet.species)}</p>
+                    <p>🐾 Especie: {getSpeciesName(pet.species)}</p>
                     {pet.breed && <p>🦴 Raza: {pet.breed}</p>}
-                    {pet.color && <p> Color: {pet.color}</p>}
+                    {pet.color && <p>🎨 Color: {pet.color}</p>}
                     {pet.sex && <p>⚧ Sexo: {getSexName(pet.sex)}</p>}
                   </div>
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-xs text-gray-500 mb-3">Código QR: <span className="font-mono font-bold text-purple-600">{pet.public_id}</span></p>
                     <div className="flex gap-2 mb-2">
-                      <a href={`/pets/${pet.public_id}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-pink-600 text-white text-sm py-2 rounded hover:bg-pink-700 text-center">️ Ver Perfil</a>
+                      <a href={`/pets/${pet.public_id}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-pink-600 text-white text-sm py-2 rounded hover:bg-pink-700 text-center">👁️ Ver Perfil</a>
                       <button onClick={() => setSelectedPet(pet)} className="flex-1 bg-purple-600 text-white text-sm py-2 rounded hover:bg-purple-700">📱 Ver QR</button>
                       <button onClick={() => openEditModal(pet)} className="flex-1 bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700">✏️ Editar</button>
                     </div>
@@ -703,10 +819,12 @@ export default function DashboardPage() {
                       <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">📜 Ver Historial</button>
                     </div>
                     <button onClick={() => openVaccines(pet)} className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700 mb-2 flex items-center justify-center gap-2">💉 Vacunas y Salud</button>
-                    
                     <button onClick={() => openVet(pet)} className="w-full bg-orange-500 text-white text-sm py-2 rounded hover:bg-orange-600 mb-2 flex items-center justify-center gap-2 font-semibold">🩺 Veterinario</button>
+                    
+                    {/* ⚠️ NUEVO BOTÓN: ALERGIAS */}
+                    <button onClick={() => openAllergies(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2 flex items-center justify-center gap-2 font-semibold">️ Alergias</button>
 
-                    <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold"> Diario de Vida</a>
+                    <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">📖 Diario de Vida</a>
 
                     {isLost ? (
                       <button onClick={() => reportFound(pet.id)} className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 mb-2">✅ Marcar como Encontrado</button>
@@ -820,7 +938,7 @@ export default function DashboardPage() {
                   <option value="">Seleccionar...</option>
                   <option value="dog">🐶 Perro</option>
                   <option value="cat">🐱 Gato</option>
-                  <option value="bird">🐦 Ave</option>
+                  <option value="bird"> Ave</option>
                   <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
                 </select>
@@ -846,7 +964,7 @@ export default function DashboardPage() {
                 <input type="text" value={formData.microchip} onChange={(e) => setFormData({ ...formData, microchip: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none" />
               </div>
               <div className="md:col-span-2 flex gap-3 mt-4">
-                <button type="submit" className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700"> Guardar Cambios</button>
+                <button type="submit" className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700">💾 Guardar Cambios</button>
                 <button type="button" onClick={closeEditModal} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
               </div>
             </form>
@@ -858,7 +976,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">📍 Ubicación de {showMap.name}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2"> Ubicación de {showMap.name}</h3>
               <p className="text-sm text-gray-500">Última actualización: {showMap.last_location_updated_at || "Nunca"}</p>
             </div>
             <div className="border-2 border-purple-200 rounded-lg overflow-hidden mb-6">
@@ -916,7 +1034,7 @@ export default function DashboardPage() {
                           <p className="text-xs text-purple-600 italic">🔄 Obteniendo dirección...</p>
                         ) : address ? (
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">📍 Dirección aproximada:</p>
+                            <p className="text-xs text-gray-500 mb-1"> Dirección aproximada:</p>
                             <p className="text-sm font-semibold text-gray-800">{address}</p>
                           </div>
                         ) : (
@@ -943,7 +1061,7 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-gray-800">💉 Vacunas y Salud - {selectedPetForVaccines.name}</h3>
                 <p className="text-sm text-gray-500">{vaccinations.length} registro(s) de salud</p>
               </div>
-              <button onClick={() => { setShowVaccines(false); setShowAddVaccine(false); }} className="text-gray-500 hover:text-gray-700 text-2xl"></button>
+              <button onClick={() => { setShowVaccines(false); setShowAddVaccine(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
             {!showAddVaccine ? (
               <>
@@ -971,7 +1089,7 @@ export default function DashboardPage() {
                             {vac.vet_name && (<div><p className="text-xs text-gray-500">Veterinario:</p><p className="font-semibold">{vac.vet_name}</p></div>)}
                             {vac.lot_number && (<div><p className="text-xs text-gray-500">Lote:</p><p className="font-mono text-xs">{vac.lot_number}</p></div>)}
                           </div>
-                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">🗑️ Eliminar registro</button>
+                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">️ Eliminar registro</button>
                         </div>
                       );
                     })}
@@ -1018,7 +1136,7 @@ export default function DashboardPage() {
                   <input type="text" value={vaccineForm.lot_number} onChange={(e) => setVaccineForm({ ...vaccineForm, lot_number: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-teal-600 focus:outline-none" placeholder="LOT-12345" />
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button type="submit" className="flex-1 bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 font-semibold"> Guardar vacuna</button>
+                  <button type="submit" className="flex-1 bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 font-semibold">💾 Guardar vacuna</button>
                   <button type="button" onClick={() => setShowAddVaccine(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
                 </div>
               </form>
@@ -1027,7 +1145,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 🩺 MODAL VETERINARIO CON TOGGLE DE VISIBILIDAD */}
+      {/* 🩺 MODAL VETERINARIO */}
       {showVet && selectedPetForVet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-lg w-full max-h-[95vh] overflow-y-auto">
@@ -1048,7 +1166,7 @@ export default function DashboardPage() {
               <form onSubmit={handleSaveVet} className="space-y-4">
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                   <p className="text-sm text-orange-800">
-                    💡 <strong>Tip:</strong> Este es el veterinario principal de tu mascota.
+                     <strong>Tip:</strong> Este es el veterinario principal de tu mascota.
                   </p>
                 </div>
 
@@ -1108,7 +1226,6 @@ export default function DashboardPage() {
                   />
                 </div>
 
-                {/* 🔒 TOGGLE DE VISIBILIDAD PÚBLICA */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input 
@@ -1142,6 +1259,173 @@ export default function DashboardPage() {
                     🗑️ Eliminar veterinario registrado
                   </button>
                 )}
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ️ MODAL ALERGIAS */}
+      {showAllergies && selectedPetForAllergies && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800">⚠️ Alergias de {selectedPetForAllergies.name}</h3>
+                <p className="text-sm text-gray-500">{allergies.length} alergia(s) registrada(s)</p>
+              </div>
+              <button onClick={() => { setShowAllergies(false); setShowAddAllergy(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
+            </div>
+
+            {!showAddAllergy ? (
+              <>
+                {allergies.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <p className="text-gray-600 mb-4">No hay alergias registradas</p>
+                    <p className="text-sm text-gray-500 mb-6">Registrar alergias ayuda a prevenir emergencias si tu mascota se pierde.</p>
+                    <button onClick={() => setShowAddAllergy(true)} className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 font-semibold">+ Agregar primera alergia</button>
+                  </div>
+                ) : (
+                  <div className="space-y-3 mb-6">
+                    {allergies.map((allergy: any) => {
+                      const severity = severityConfig[allergy.severity] || severityConfig.moderate;
+                      return (
+                        <div key={allergy.id} className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">
+                                  {allergyTypeLabels[allergy.allergy_type] || allergy.allergy_type}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${severity.color}`}>
+                                  {severity.emoji} {severityLabels[allergy.severity] || allergy.severity}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${allergy.public === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                                  {allergy.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                                </span>
+                              </div>
+                              <h4 className="font-bold text-red-900 text-lg"> {allergy.allergen}</h4>
+                            </div>
+                          </div>
+                          {allergy.symptoms && (
+                            <div className="mt-2">
+                              <p className="text-xs text-gray-500 font-semibold">Síntomas:</p>
+                              <p className="text-sm text-gray-700">{allergy.symptoms}</p>
+                            </div>
+                          )}
+                          {allergy.treatment && (
+                            <div className="mt-2">
+                              <p className="text-xs text-gray-500 font-semibold">Qué hacer:</p>
+                              <p className="text-sm text-gray-700">{allergy.treatment}</p>
+                            </div>
+                          )}
+                          <div className="flex gap-2 mt-3 pt-3 border-t border-red-100">
+                            <button 
+                              onClick={() => handleToggleAllergyPublic(allergy.id)} 
+                              className={`px-3 py-1 rounded text-xs font-semibold ${allergy.public === 1 ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                            >
+                              {allergy.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteAllergy(allergy.id)} 
+                              className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200"
+                            >
+                              🗑️ Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <button onClick={() => setShowAddAllergy(true)} className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 font-semibold flex items-center justify-center gap-2">+ Agregar nueva alergia</button>
+              </>
+            ) : (
+              <form onSubmit={handleAddAllergy} className="space-y-4">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Registrar nueva alergia para {selectedPetForAllergies.name}</h4>
+                
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-800">
+                    ⚠️ <strong>Importante:</strong> Esta información puede salvar la vida de tu mascota en emergencias.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de alergia *</label>
+                  <select required value={allergyForm.allergyType} onChange={(e) => setAllergyForm({ ...allergyForm, allergyType: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none">
+                    <option value="food">🍖 Alimento</option>
+                    <option value="medication">💊 Medicamento</option>
+                    <option value="environmental">🌿 Ambiental</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Alérgeno (qué le da alergia) *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={allergyForm.allergen} 
+                    onChange={(e) => setAllergyForm({ ...allergyForm, allergen: e.target.value })} 
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none" 
+                    placeholder="Ej: Pollo, Penicilina, Polvo, Ácaros..." 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gravedad *</label>
+                  <select required value={allergyForm.severity} onChange={(e) => setAllergyForm({ ...allergyForm, severity: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none">
+                    <option value="mild">⚠️ Leve (molestia, picazón)</option>
+                    <option value="moderate">⚠️ Moderada (vómito, diarrea)</option>
+                    <option value="severe">🚨 Grave (shock anafiláctico, riesgo de muerte)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Síntomas</label>
+                  <textarea 
+                    rows={2} 
+                    value={allergyForm.symptoms} 
+                    onChange={(e) => setAllergyForm({ ...allergyForm, symptoms: e.target.value })} 
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none" 
+                    placeholder="Ej: Vómito, picazón en la piel, hinchazón..." 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Qué hacer si tiene reacción</label>
+                  <textarea 
+                    rows={2} 
+                    value={allergyForm.treatment} 
+                    onChange={(e) => setAllergyForm({ ...allergyForm, treatment: e.target.value })} 
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none" 
+                    placeholder="Ej: Suspender alimento, llevar al veterinario de inmediato, aplicar antihistamínico..." 
+                  />
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={allergyForm.isPublic} 
+                      onChange={(e) => setAllergyForm({ ...allergyForm, isPublic: e.target.checked })}
+                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <p className="font-semibold text-blue-900">👁️ Mostrar en perfil público</p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        {allergyForm.isPublic 
+                          ? "✅ Cualquier persona que escanee el QR podrá ver esta alergia (recomendado para emergencias)." 
+                          : "🔒 Esta información será privada, solo visible para ti en el dashboard."}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button type="submit" className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 font-semibold">💾 Guardar alergia</button>
+                  <button type="button" onClick={() => setShowAddAllergy(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
+                </div>
               </form>
             )}
           </div>
