@@ -31,14 +31,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: "Falta petId" }, { status: 400 });
     }
 
-    let query = `SELECT * FROM pet_gallery WHERE pet_id = ?`;
-    let params: any[] = [petId];
+    let query = `
+      SELECT pg.* 
+      FROM pet_gallery pg
+      JOIN pets p ON pg.pet_id = p.id
+      WHERE (p.id = ? OR p.public_id = ?)
+    `;
+    let params: any[] = [petId, petId];
 
     if (publicOnly) {
-      query += ` AND public = 1`;
+      query += ` AND pg.public = 1`;
     }
 
-    query += ` ORDER BY created_at DESC`;
+    query += ` ORDER BY pg.created_at DESC`;
 
     const result = await db.execute(query, params);
 
