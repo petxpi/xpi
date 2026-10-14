@@ -59,6 +59,7 @@ export default function PetPublicProfile() {
   }
 
   async function loadDiaryData() {
+    console.log("🔄 Cargando datos del diario para:", publicId);
     setLoadingDiary(true);
     try {
       const [photosRes, milestonesRes, docsRes] = await Promise.all([
@@ -70,6 +71,10 @@ export default function PetPublicProfile() {
       const photosData = await photosRes.json();
       const milestonesData = await milestonesRes.json();
       const docsData = await docsRes.json();
+
+      console.log(" Fotos:", photosData.photos);
+      console.log("📖 Hitos:", milestonesData.milestones);
+      console.log("📄 Documentos:", docsData.documents);
 
       setPhotos(photosData.photos || []);
       setMilestones(milestonesData.milestones || []);
