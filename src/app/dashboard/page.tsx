@@ -26,11 +26,12 @@ export default function DashboardPage() {
     vet_name: "",
   });
 
-  // 🩺 ESTADOS VETERINARIO
+  //  ESTADOS VETERINARIO
   const [showVet, setShowVet] = useState(false);
   const [selectedPetForVet, setSelectedPetForVet] = useState<any>(null);
   const [vetData, setVetData] = useState({ vetName: "", clinicName: "", phone: "", address: "", notes: "" });
   const [loadingVet, setLoadingVet] = useState(false);
+  const [vetIsPublic, setVetIsPublic] = useState(true); // 🔒 NUEVO: Control de visibilidad
 
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [locationHistory, setLocationHistory] = useState<any[]>([]);
@@ -450,12 +451,13 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message || "Error al eliminar vacuna"); }
   }
 
-  // 🩺 FUNCIONES VETERINARIO
+  // 🩺 FUNCIONES VETERINARIO (MODIFICADAS)
   async function openVet(pet: any) {
     setSelectedPetForVet(pet);
     setShowVet(true);
     setLoadingVet(true);
     setVetData({ vetName: "", clinicName: "", phone: "", address: "", notes: "" });
+    setVetIsPublic(true); // Por defecto público
     
     try {
       const response = await fetch(`/api/veterinarians?petId=${pet.id}`);
@@ -468,6 +470,8 @@ export default function DashboardPage() {
           address: data.vet.address || "",
           notes: data.vet.notes || "",
         });
+        // 🔒 Cargar estado de visibilidad (1 = público, 0 = privado)
+        setVetIsPublic(data.vet.public === 1);
       }
     } catch (err) {
       console.error("Error al cargar veterinario:", err);
@@ -491,6 +495,7 @@ export default function DashboardPage() {
           phone: vetData.phone,
           address: vetData.address,
           notes: vetData.notes,
+          isPublic: vetIsPublic, // 🔒 NUEVO: Enviar estado de visibilidad
         }),
       });
       
@@ -520,6 +525,7 @@ export default function DashboardPage() {
       alert("Veterinario eliminado");
       setShowVet(false);
       setVetData({ vetName: "", clinicName: "", phone: "", address: "", notes: "" });
+      setVetIsPublic(true);
     } catch (err: any) {
       alert("Error: " + err.message);
     }
@@ -530,7 +536,7 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "", cat: "🐱", bird: "🐦", rabbit: "🐰", other: "🐾" };
+  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "🐦", rabbit: "🐰", other: "" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
@@ -546,7 +552,7 @@ export default function DashboardPage() {
     const nextDate = new Date(nextDue);
     const today = new Date();
     const diffDays = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} días)`, emoji: "⚠️" };
+    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} días)`, emoji: "️" };
     if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Próxima (${diffDays} días)`, emoji: "⏰" };
     return { color: "bg-green-100 text-green-700", text: `Al día (${diffDays} días)`, emoji: "✅" };
   }
@@ -557,7 +563,7 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-purple-600">🐾 XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium">📋 Reportes</Link>
+            <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium"> Reportes</Link>
             <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">⚙️ Contacto Público</Link>
             <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">👤 Mi Perfil</Link>
             <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesión</button>
@@ -580,7 +586,7 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold mb-4">Nueva Mascota</h3>
             <form onSubmit={handleCreatePet} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-dashed border-purple-300">
-                <label className="block text-sm font-medium text-gray-700 mb-2">📷 Foto de la mascota</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2"> Foto de la mascota</label>
                 <input type="file" accept="image/*" onChange={(e) => handlePhotoSelect(e, "create")} disabled={uploading} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" />
                 {formData.photo && !uploading && (
                   <div className="mt-3 flex items-center gap-4">
@@ -610,8 +616,8 @@ export default function DashboardPage() {
                   <option value="">Seleccionar...</option>
                   <option value="dog">🐶 Perro</option>
                   <option value="cat">🐱 Gato</option>
-                  <option value="bird"> Ave</option>
-                  <option value="rabbit">🐰 Conejo</option>
+                  <option value="bird">🐦 Ave</option>
+                  <option value="rabbit"> Conejo</option>
                   <option value="other">Otro</option>
                 </select>
               </div>
@@ -658,7 +664,7 @@ export default function DashboardPage() {
               return (
                 <div key={pet.id} className={`bg-white rounded-xl shadow p-6 ${isLost ? "border-2 border-red-500" : ""}`}>
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || ""} {pet.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || "🐾"} {pet.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded font-semibold ${statusInfo.color}`}>{statusInfo.emoji} {statusInfo.text}</span>
                   </div>
                   
@@ -669,7 +675,7 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-4xl border-4 border-gray-100">
-                        {speciesEmoji[pet.species] || ""}
+                        {speciesEmoji[pet.species] || "🐾"}
                       </div>
                     )}
                   </div>
@@ -680,35 +686,34 @@ export default function DashboardPage() {
                     </div>
                   )}
                   <div className="space-y-1 text-sm text-gray-600">
-                    <p>🐾 Especie: {getSpeciesName(pet.species)}</p>
+                    <p> Especie: {getSpeciesName(pet.species)}</p>
                     {pet.breed && <p>🦴 Raza: {pet.breed}</p>}
-                    {pet.color && <p>🎨 Color: {pet.color}</p>}
+                    {pet.color && <p> Color: {pet.color}</p>}
                     {pet.sex && <p>⚧ Sexo: {getSexName(pet.sex)}</p>}
                   </div>
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-xs text-gray-500 mb-3">Código QR: <span className="font-mono font-bold text-purple-600">{pet.public_id}</span></p>
                     <div className="flex gap-2 mb-2">
-                      <a href={`/pets/${pet.public_id}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-pink-600 text-white text-sm py-2 rounded hover:bg-pink-700 text-center">👁️ Ver Perfil</a>
+                      <a href={`/pets/${pet.public_id}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-pink-600 text-white text-sm py-2 rounded hover:bg-pink-700 text-center">️ Ver Perfil</a>
                       <button onClick={() => setSelectedPet(pet)} className="flex-1 bg-purple-600 text-white text-sm py-2 rounded hover:bg-purple-700">📱 Ver QR</button>
                       <button onClick={() => openEditModal(pet)} className="flex-1 bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700">✏️ Editar</button>
                     </div>
                     <div className="flex gap-2 mb-2">
-                      <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700"> Ver Ubicación</button>
+                      <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">📍 Ver Ubicación</button>
                       <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">📜 Ver Historial</button>
                     </div>
                     <button onClick={() => openVaccines(pet)} className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700 mb-2 flex items-center justify-center gap-2">💉 Vacunas y Salud</button>
                     
-                    {/* 🩺 BOTÓN VETERINARIO */}
                     <button onClick={() => openVet(pet)} className="w-full bg-orange-500 text-white text-sm py-2 rounded hover:bg-orange-600 mb-2 flex items-center justify-center gap-2 font-semibold">🩺 Veterinario</button>
 
-                    <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">📖 Diario de Vida</a>
+                    <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold"> Diario de Vida</a>
 
                     {isLost ? (
                       <button onClick={() => reportFound(pet.id)} className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 mb-2">✅ Marcar como Encontrado</button>
                     ) : (
                       <button onClick={() => setShowLostModal(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2">🚨 Reportar Perdido</button>
                     )}
-                    <button onClick={() => handleDeletePet(pet.id)} className="w-full bg-red-100 text-red-600 text-sm py-2 rounded hover:bg-red-200">️ Eliminar</button>
+                    <button onClick={() => handleDeletePet(pet.id)} className="w-full bg-red-100 text-red-600 text-sm py-2 rounded hover:bg-red-200">🗑️ Eliminar</button>
                     <div className="mt-3 pt-3 border-t">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-600">GPS:</span>
@@ -728,7 +733,7 @@ export default function DashboardPage() {
       {showCropModal && cropImage && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center"> Ajusta la foto</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">📸 Ajusta la foto</h3>
             <p className="text-sm text-gray-600 mb-4 text-center">Mueve y haz zoom para seleccionar la parte que quieres mostrar</p>
             <div className="relative w-full h-80 mb-6 bg-gray-100 rounded-lg overflow-hidden">
               <Cropper image={cropImage} crop={crop} zoom={zoom} aspect={1} cropShape="round" onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} />
@@ -815,7 +820,7 @@ export default function DashboardPage() {
                   <option value="">Seleccionar...</option>
                   <option value="dog">🐶 Perro</option>
                   <option value="cat">🐱 Gato</option>
-                  <option value="bird"> Ave</option>
+                  <option value="bird">🐦 Ave</option>
                   <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
                 </select>
@@ -841,7 +846,7 @@ export default function DashboardPage() {
                 <input type="text" value={formData.microchip} onChange={(e) => setFormData({ ...formData, microchip: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none" />
               </div>
               <div className="md:col-span-2 flex gap-3 mt-4">
-                <button type="submit" className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700">💾 Guardar Cambios</button>
+                <button type="submit" className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700"> Guardar Cambios</button>
                 <button type="button" onClick={closeEditModal} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
               </div>
             </form>
@@ -853,7 +858,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2"> Ubicación de {showMap.name}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">📍 Ubicación de {showMap.name}</h3>
               <p className="text-sm text-gray-500">Última actualización: {showMap.last_location_updated_at || "Nunca"}</p>
             </div>
             <div className="border-2 border-purple-200 rounded-lg overflow-hidden mb-6">
@@ -899,7 +904,7 @@ export default function DashboardPage() {
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <p className="text-sm font-bold text-purple-700">📍 Ubicación #{locationHistory.length - index}</p>
-                          <p className="text-xs text-gray-600 font-mono mt-1"> Lat: {lat.toFixed(6)}, Lng: {lng.toFixed(6)}</p>
+                          <p className="text-xs text-gray-600 font-mono mt-1">🌐 Lat: {lat.toFixed(6)}, Lng: {lng.toFixed(6)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500">{new Date(loc.created_at || loc.recorded_at).toLocaleString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
@@ -938,7 +943,7 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-gray-800">💉 Vacunas y Salud - {selectedPetForVaccines.name}</h3>
                 <p className="text-sm text-gray-500">{vaccinations.length} registro(s) de salud</p>
               </div>
-              <button onClick={() => { setShowVaccines(false); setShowAddVaccine(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
+              <button onClick={() => { setShowVaccines(false); setShowAddVaccine(false); }} className="text-gray-500 hover:text-gray-700 text-2xl"></button>
             </div>
             {!showAddVaccine ? (
               <>
@@ -966,7 +971,7 @@ export default function DashboardPage() {
                             {vac.vet_name && (<div><p className="text-xs text-gray-500">Veterinario:</p><p className="font-semibold">{vac.vet_name}</p></div>)}
                             {vac.lot_number && (<div><p className="text-xs text-gray-500">Lote:</p><p className="font-mono text-xs">{vac.lot_number}</p></div>)}
                           </div>
-                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">️ Eliminar registro</button>
+                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">🗑️ Eliminar registro</button>
                         </div>
                       );
                     })}
@@ -1013,7 +1018,7 @@ export default function DashboardPage() {
                   <input type="text" value={vaccineForm.lot_number} onChange={(e) => setVaccineForm({ ...vaccineForm, lot_number: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-teal-600 focus:outline-none" placeholder="LOT-12345" />
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button type="submit" className="flex-1 bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 font-semibold">💾 Guardar vacuna</button>
+                  <button type="submit" className="flex-1 bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 font-semibold"> Guardar vacuna</button>
                   <button type="button" onClick={() => setShowAddVaccine(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
                 </div>
               </form>
@@ -1022,7 +1027,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 🩺 MODAL VETERINARIO */}
+      {/* 🩺 MODAL VETERINARIO CON TOGGLE DE VISIBILIDAD */}
       {showVet && selectedPetForVet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-lg w-full max-h-[95vh] overflow-y-auto">
@@ -1043,7 +1048,7 @@ export default function DashboardPage() {
               <form onSubmit={handleSaveVet} className="space-y-4">
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                   <p className="text-sm text-orange-800">
-                    💡 <strong>Tip:</strong> Este es el veterinario principal de tu mascota. Se mostrará en su perfil público para emergencias.
+                    💡 <strong>Tip:</strong> Este es el veterinario principal de tu mascota.
                   </p>
                 </div>
 
@@ -1103,6 +1108,26 @@ export default function DashboardPage() {
                   />
                 </div>
 
+                {/* 🔒 TOGGLE DE VISIBILIDAD PÚBLICA */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={vetIsPublic} 
+                      onChange={(e) => setVetIsPublic(e.target.checked)}
+                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <p className="font-semibold text-blue-900">👁️ Mostrar en perfil público</p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        {vetIsPublic 
+                          ? "✅ Cualquier persona que escanee el QR podrá ver los datos de este veterinario." 
+                          : "🔒 Esta información será privada, solo visible para ti en el dashboard."}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <button type="submit" className="flex-1 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 font-semibold">💾 Guardar</button>
                   <button type="button" onClick={() => setShowVet(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
@@ -1127,7 +1152,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full">
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4"></div>
+              <div className="text-6xl mb-4">🚨</div>
               <h3 className="text-2xl font-bold text-red-600 mb-2">Reportar Mascota Perdida</h3>
               <p className="text-sm text-gray-600">Estás a punto de reportar a <strong>{showLostModal.name}</strong> como perdido</p>
             </div>
@@ -1136,10 +1161,10 @@ export default function DashboardPage() {
               <textarea value={lostReport} onChange={(e) => setLostReport(e.target.value)} placeholder="Ej: Se escapó del parque ayer por la tarde..." rows={4} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none" />
             </div>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-red-800"><strong>️ Importante:</strong> Esta información será visible públicamente para ayudar a encontrar a tu mascota.</p>
+              <p className="text-sm text-red-800"><strong>⚠️ Importante:</strong> Esta información será visible públicamente para ayudar a encontrar a tu mascota.</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => { if (lostReport.trim()) reportLost(showLostModal.id, lostReport); else alert("Por favor describe lo sucedido"); }} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700">🚨 Reportar Perdido</button>
+              <button onClick={() => { if (lostReport.trim()) reportLost(showLostModal.id, lostReport); else alert("Por favor describe lo sucedido"); }} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700"> Reportar Perdido</button>
               <button onClick={() => { setShowLostModal(null); setLostReport(""); }} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
             </div>
           </div>
