@@ -48,7 +48,7 @@ export default function PetPublicProfile() {
     }
   }, [activeTab, pet]);
 
-  // ✅ CORREGIDO: Usar publicId directamente
+  // ✅ MODIFICADO: Ahora pide solo veterinarios públicos
   async function loadPet() {
     try {
       const response = await fetch(`/api/pet-contact?petId=${publicId}`);
@@ -56,10 +56,10 @@ export default function PetPublicProfile() {
       if (!response.ok) throw new Error(data.message || "Mascota no encontrada");
       setPet(data);
 
-      //  Cargar veterinario usando publicId
+      // 🩺 Cargar veterinario SOLO si es público
       try {
-        console.log(" Buscando veterinario para:", publicId);
-        const vetResponse = await fetch(`/api/veterinarians?petId=${publicId}`);
+        console.log("🩺 Buscando veterinario público para:", publicId);
+        const vetResponse = await fetch(`/api/veterinarians?petId=${publicId}&public=true`);
         const vetData = await vetResponse.json();
         console.log("🩺 Veterinario recibido:", vetData);
         if (vetData.vet) {
@@ -332,7 +332,7 @@ export default function PetPublicProfile() {
                     <div className="flex justify-between py-2"><span className="text-gray-600">Registrado</span><span className="font-semibold text-gray-800">{new Date(pet.createdAt).toLocaleDateString("es-CO")}</span></div>
                   </div>
 
-                  {/*  Sección del Veterinario - SOLO SE MUESTRA SI EXISTE */}
+                  {/* 🩺 Sección del Veterinario - SOLO SE MUESTRA SI ES PÚBLICO */}
                   {vet && (
                     <div className="mt-6 bg-orange-50 border-2 border-orange-200 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-orange-800 mb-3 flex items-center gap-2">
@@ -368,7 +368,7 @@ export default function PetPublicProfile() {
                         )}
                         {vet.address && (
                           <div className="flex items-start gap-2">
-                            <span className="text-orange-600 font-semibold"></span>
+                            <span className="text-orange-600 font-semibold">📍</span>
                             <div>
                               <p className="text-xs text-gray-500">Dirección</p>
                               <p className="font-semibold text-gray-800">{vet.address}</p>
@@ -377,7 +377,7 @@ export default function PetPublicProfile() {
                         )}
                         {vet.notes && (
                           <div className="flex items-start gap-2 mt-3 pt-3 border-t border-orange-200">
-                            <span className="text-orange-600 font-semibold">📝</span>
+                            <span className="text-orange-600 font-semibold"></span>
                             <div>
                               <p className="text-xs text-gray-500">Notas</p>
                               <p className="text-gray-700 italic">{vet.notes}</p>

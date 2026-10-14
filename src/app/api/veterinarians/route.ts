@@ -25,18 +25,26 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const petId = searchParams.get("petId");
+    const publicOnly = searchParams.get("public") === "true";
 
     if (!petId) {
       return NextResponse.json({ message: "Falta petId" }, { status: 400 });
     }
 
-    const result = await db.execute(
-      `SELECT v.* 
-       FROM veterinarians v
-       JOIN pets p ON v.pet_id = p.id
-       WHERE (p.id = ? OR p.public_id = ?)`,
-      [petId, petId]
-    );
+    let query = `
+      SELECT v.* 
+      FROM veterinarians v
+      JOIN pets p ON v.pet_id = p.id
+      WHERE (p.id = ? OR p.public_id = ?)
+    `;
+    let params: any[] = [petId, petId];
+
+    // Si es consulta pública, solo mostrar si está marcado como público
+    if (publicOnly) {
+      query += ` AND v.public = 1`;
+    }
+
+    const result = await db.execute(query, params);
 
     const vet = result.rows.length > 0 ? result.rows[0] : null;
 
@@ -56,7 +64,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { petId, vetName, clinicName, phone, address, notes } = body;
+    const { petId, vetName, clinicName, phone, address, notes, isPublic } = body;
 
     if (!petId || !vetName) {
       return NextResponse.json({ message: "Faltan campos obligatorios" }, { status: 400 });
@@ -76,11 +84,13 @@ export async function POST(request: Request) {
     await db.execute(`DELETE FROM veterinarians WHERE pet_id = ?`, [petId]);
 
     const id = crypto.randomUUID();
+    // isPublic: 1 si es público, 0 si es privado (por defecto 1 para mantener compatibilidad)
+    const publicValue = isPublic === false ? 0 : 1;
 
     await db.execute(
-      `INSERT INTO veterinarians (id, pet_id, vet_name, clinic_name, phone, address, notes, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-      [id, petId, vetName, clinicName || null, phone || null, address || null, notes || null]
+      `INSERT INTO veterinarians (id, pet_id, vet_name, clinic_name, phone, address, notes, public, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      [id, petId, vetName, clinicName || null, phone || null, address || null, notes || null, publicValue]
     );
 
     return NextResponse.json({ message: "Veterinario guardado", vetId: id }, { status: 201 });
