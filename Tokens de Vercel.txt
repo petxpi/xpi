@@ -1,3 +1,0 @@
-vcp_5eLLmRasyfxV8Hvh9GeauZhWalWEoV3twn1x28XFDFF84FTDur0Df1DO
-cd C:\xpipet
-npx vercel --prod --scope sistemdatos001-5451s-projects --token vcp_5eLLmRasyfxV8Hvh9GeauZhWalWEoV3twn1x28XFDFF84FTDur0Df1DO
