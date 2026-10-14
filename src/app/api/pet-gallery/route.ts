@@ -25,19 +25,26 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const petId = searchParams.get("petId");
+    const publicOnly = searchParams.get("public") === "true";
 
     if (!petId) {
       return NextResponse.json({ message: "Falta petId" }, { status: 400 });
     }
 
-    const result = await db.execute(
-      `SELECT * FROM pet_gallery WHERE pet_id = ? ORDER BY created_at DESC`,
-      [petId]
-    );
+    let query = `SELECT * FROM pet_gallery WHERE pet_id = ?`;
+    let params: any[] = [petId];
+
+    if (publicOnly) {
+      query += ` AND public = 1`;
+    }
+
+    query += ` ORDER BY created_at DESC`;
+
+    const result = await db.execute(query, params);
 
     return NextResponse.json({ photos: result.rows }, { status: 200 });
   } catch (error: any) {
-    console.error("❌ Error al obtener galería:", error);
+    console.error("Error al obtener galería:", error);
     return NextResponse.json({ message: "Error interno" }, { status: 500 });
   }
 }
@@ -57,7 +64,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Faltan campos obligatorios" }, { status: 400 });
     }
 
-    // Verificar que la mascota pertenezca al usuario
     const petCheck = await db.execute(
       `SELECT id FROM pets WHERE id = ? AND user_id = ?`,
       [petId, userId]
@@ -70,17 +76,17 @@ export async function POST(request: Request) {
     const id = crypto.randomUUID();
 
     await db.execute(
-      `INSERT INTO pet_gallery (id, pet_id, photo_url, category, caption, taken_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+      `INSERT INTO pet_gallery (id, pet_id, photo_url, category, caption, taken_at, public, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 0, datetime('now'))`,
       [id, petId, photoUrl, category, caption || null, takenAt || null]
     );
 
     return NextResponse.json({ 
-      message: "✅ Foto agregada a la galería", 
+      message: "Foto agregada a la galería", 
       photoId: id 
     }, { status: 201 });
   } catch (error: any) {
-    console.error("❌ Error al agregar foto:", error);
+    console.error("Error al agregar foto:", error);
     return NextResponse.json({ message: "Error interno: " + error.message }, { status: 500 });
   }
 }
@@ -100,7 +106,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ message: "Faltan datos" }, { status: 400 });
     }
 
-    // Verificar propiedad
     const check = await db.execute(
       `SELECT pg.id FROM pet_gallery pg 
        JOIN pets p ON pg.pet_id = p.id 
@@ -114,9 +119,9 @@ export async function DELETE(request: Request) {
 
     await db.execute(`DELETE FROM pet_gallery WHERE id = ?`, [photoId]);
 
-    return NextResponse.json({ message: "✅ Foto eliminada" }, { status: 200 });
+    return NextResponse.json({ message: "Foto eliminada" }, { status: 200 });
   } catch (error: any) {
-    console.error("❌ Error al eliminar foto:", error);
+    console.error("Error al eliminar foto:", error);
     return NextResponse.json({ message: "Error interno" }, { status: 500 });
   }
 }

@@ -25,19 +25,26 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const petId = searchParams.get("petId");
+    const publicOnly = searchParams.get("public") === "true";
 
     if (!petId) {
       return NextResponse.json({ message: "Falta petId" }, { status: 400 });
     }
 
-    const result = await db.execute(
-      `SELECT * FROM pet_documents WHERE pet_id = ? ORDER BY created_at DESC`,
-      [petId]
-    );
+    let query = `SELECT * FROM pet_documents WHERE pet_id = ?`;
+    let params: any[] = [petId];
+
+    if (publicOnly) {
+      query += ` AND public = 1`;
+    }
+
+    query += ` ORDER BY created_at DESC`;
+
+    const result = await db.execute(query, params);
 
     return NextResponse.json({ documents: result.rows }, { status: 200 });
   } catch (error: any) {
-    console.error("❌ Error al obtener documentos:", error);
+    console.error("Error al obtener documentos:", error);
     return NextResponse.json({ message: "Error interno" }, { status: 500 });
   }
 }
@@ -57,7 +64,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Faltan campos obligatorios" }, { status: 400 });
     }
 
-    // Verificar propiedad
     const petCheck = await db.execute(
       `SELECT id FROM pets WHERE id = ? AND user_id = ?`,
       [petId, userId]
@@ -70,17 +76,17 @@ export async function POST(request: Request) {
     const id = crypto.randomUUID();
 
     await db.execute(
-      `INSERT INTO pet_documents (id, pet_id, document_url, document_type, document_name, issue_date, expiry_date, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      `INSERT INTO pet_documents (id, pet_id, document_url, document_type, document_name, issue_date, expiry_date, public, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0, datetime('now'))`,
       [id, petId, documentUrl, documentType, documentName || null, issueDate || null, expiryDate || null]
     );
 
     return NextResponse.json({ 
-      message: "✅ Documento agregado", 
+      message: "Documento agregado", 
       documentId: id 
     }, { status: 201 });
   } catch (error: any) {
-    console.error("❌ Error al agregar documento:", error);
+    console.error("Error al agregar documento:", error);
     return NextResponse.json({ message: "Error interno: " + error.message }, { status: 500 });
   }
 }
@@ -113,9 +119,9 @@ export async function DELETE(request: Request) {
 
     await db.execute(`DELETE FROM pet_documents WHERE id = ?`, [documentId]);
 
-    return NextResponse.json({ message: "✅ Documento eliminado" }, { status: 200 });
+    return NextResponse.json({ message: "Documento eliminado" }, { status: 200 });
   } catch (error: any) {
-    console.error("❌ Error al eliminar documento:", error);
+    console.error("Error al eliminar documento:", error);
     return NextResponse.json({ message: "Error interno" }, { status: 500 });
   }
 }
