@@ -30,7 +30,7 @@ export default function PetPublicProfile() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loadingDiary, setLoadingDiary] = useState(false);
 
-  // 🩺 NUEVO: Estado para el veterinario
+  // 🩺 Estado para el veterinario
   const [vet, setVet] = useState<any>(null);
 
   useEffect(() => {
@@ -48,6 +48,7 @@ export default function PetPublicProfile() {
     }
   }, [activeTab, pet]);
 
+  // ✅ CORREGIDO: Usar publicId directamente
   async function loadPet() {
     try {
       const response = await fetch(`/api/pet-contact?petId=${publicId}`);
@@ -55,10 +56,12 @@ export default function PetPublicProfile() {
       if (!response.ok) throw new Error(data.message || "Mascota no encontrada");
       setPet(data);
 
-      // 🩺 NUEVO: Cargar veterinario
+      //  Cargar veterinario usando publicId
       try {
-        const vetResponse = await fetch(`/api/veterinarians?petId=${data.petId}`);
+        console.log(" Buscando veterinario para:", publicId);
+        const vetResponse = await fetch(`/api/veterinarians?petId=${publicId}`);
         const vetData = await vetResponse.json();
+        console.log("🩺 Veterinario recibido:", vetData);
         if (vetData.vet) {
           setVet(vetData.vet);
         }
@@ -73,7 +76,6 @@ export default function PetPublicProfile() {
   }
 
   async function loadDiaryData() {
-    console.log("🔄 Cargando datos del diario para:", publicId);
     setLoadingDiary(true);
     try {
       const [photosRes, milestonesRes, docsRes] = await Promise.all([
@@ -85,10 +87,6 @@ export default function PetPublicProfile() {
       const photosData = await photosRes.json();
       const milestonesData = await milestonesRes.json();
       const docsData = await docsRes.json();
-
-      console.log("📸 Fotos:", photosData.photos);
-      console.log(" Hitos:", milestonesData.milestones);
-      console.log("📄 Documentos:", docsData.documents);
 
       setPhotos(photosData.photos || []);
       setMilestones(milestonesData.milestones || []);
@@ -334,7 +332,7 @@ export default function PetPublicProfile() {
                     <div className="flex justify-between py-2"><span className="text-gray-600">Registrado</span><span className="font-semibold text-gray-800">{new Date(pet.createdAt).toLocaleDateString("es-CO")}</span></div>
                   </div>
 
-                  {/*  NUEVO: Sección del Veterinario */}
+                  {/*  Sección del Veterinario - SOLO SE MUESTRA SI EXISTE */}
                   {vet && (
                     <div className="mt-6 bg-orange-50 border-2 border-orange-200 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-orange-800 mb-3 flex items-center gap-2">
@@ -350,7 +348,7 @@ export default function PetPublicProfile() {
                         </div>
                         {vet.clinic_name && (
                           <div className="flex items-start gap-2">
-                            <span className="text-orange-600 font-semibold"></span>
+                            <span className="text-orange-600 font-semibold">🏥</span>
                             <div>
                               <p className="text-xs text-gray-500">Clínica</p>
                               <p className="font-semibold text-gray-800">{vet.clinic_name}</p>
@@ -370,7 +368,7 @@ export default function PetPublicProfile() {
                         )}
                         {vet.address && (
                           <div className="flex items-start gap-2">
-                            <span className="text-orange-600 font-semibold">📍</span>
+                            <span className="text-orange-600 font-semibold"></span>
                             <div>
                               <p className="text-xs text-gray-500">Dirección</p>
                               <p className="font-semibold text-gray-800">{vet.address}</p>
@@ -379,7 +377,7 @@ export default function PetPublicProfile() {
                         )}
                         {vet.notes && (
                           <div className="flex items-start gap-2 mt-3 pt-3 border-t border-orange-200">
-                            <span className="text-orange-600 font-semibold"></span>
+                            <span className="text-orange-600 font-semibold">📝</span>
                             <div>
                               <p className="text-xs text-gray-500">Notas</p>
                               <p className="text-gray-700 italic">{vet.notes}</p>
