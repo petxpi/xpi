@@ -39,8 +39,11 @@ export default function PetPublicProfile() {
   // 💊 Estado para los medicamentos
   const [medications, setMedications] = useState<any[]>([]);
 
-  //  Estado para el historial médico
+  // 🏥 Estado para el historial médico
   const [medicalHistory, setMedicalHistory] = useState<any[]>([]);
+
+  //  Estado para las desparasitaciones (NUEVO)
+  const [dewormings, setDewormings] = useState<any[]>([]);
 
   useEffect(() => {
     loadPet();
@@ -64,7 +67,7 @@ export default function PetPublicProfile() {
       if (!response.ok) throw new Error(data.message || "Mascota no encontrada");
       setPet(data);
 
-      //  Cargar veterinario SOLO si es público
+      // 🩺 Cargar veterinario SOLO si es público
       try {
         const vetResponse = await fetch(`/api/veterinarians?petId=${publicId}&public=true`);
         const vetData = await vetResponse.json();
@@ -75,7 +78,7 @@ export default function PetPublicProfile() {
         console.error("Error al cargar veterinario:", err);
       }
 
-      // ⚠️ Cargar alergias públicas
+      // ️ Cargar alergias públicas
       try {
         const allergiesResponse = await fetch(`/api/pet-allergies?petId=${publicId}&public=true`);
         const allergiesData = await allergiesResponse.json();
@@ -93,13 +96,22 @@ export default function PetPublicProfile() {
         console.error("Error al cargar medicamentos:", err);
       }
 
-      // 🏥 NUEVO: Cargar historial médico público
+      //  Cargar historial médico público
       try {
         const historyResponse = await fetch(`/api/pet-medical-history?petId=${publicId}&public=true`);
         const historyData = await historyResponse.json();
         setMedicalHistory(historyData.history || []);
       } catch (err) {
         console.error("Error al cargar historial médico:", err);
+      }
+
+      // 🦠 NUEVO: Cargar desparasitaciones públicas
+      try {
+        const dewormingResponse = await fetch(`/api/pet-deworming?petId=${publicId}&public=true`);
+        const dewormingData = await dewormingResponse.json();
+        setDewormings(dewormingData.dewormings || []);
+      } catch (err) {
+        console.error("Error al cargar desparasitaciones:", err);
       }
     } catch (err: any) {
       setError(err.message);
@@ -294,7 +306,7 @@ export default function PetPublicProfile() {
   const severityConfig: Record<string, { color: string; emoji: string }> = {
     mild: { color: "bg-yellow-100 text-yellow-800", emoji: "⚠️" },
     moderate: { color: "bg-orange-100 text-orange-800", emoji: "⚠️" },
-    severe: { color: "bg-red-100 text-red-800", emoji: "🚨" },
+    severe: { color: "bg-red-100 text-red-800", emoji: "" },
   };
 
   const severityLabels: Record<string, string> = {
@@ -303,7 +315,6 @@ export default function PetPublicProfile() {
     severe: "Grave",
   };
 
-  // 🏥 Labels para historial médico
   const conditionTypeLabels: Record<string, string> = {
     surgery: "🔪 Cirugía",
     illness: "🤒 Enfermedad",
@@ -311,6 +322,23 @@ export default function PetPublicProfile() {
     diagnosis: "🔬 Diagnóstico",
     other: "📋 Otro",
   };
+
+  // 🦠 Labels para desparasitaciones (NUEVO)
+  const dewormingTypeLabels: Record<string, string> = {
+    internal: "💊 Interna",
+    external: " Externa",
+    both: "💊🧴 Interna + Externa",
+  };
+
+  function getNextDewormingStatus(nextDate: string): { color: string; text: string; emoji: string } {
+    if (!nextDate) return { color: "bg-gray-100 text-gray-700", text: "Sin próxima dosis", emoji: "" };
+    const next = new Date(nextDate);
+    const today = new Date();
+    const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} días)`, emoji: "⚠️" };
+    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Próxima (${diffDays} días)`, emoji: "⏰" };
+    return { color: "bg-green-100 text-green-700", text: `Al día (${diffDays} días)`, emoji: "✅" };
+  }
 
   if (loading) return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center"><p className="text-purple-600 font-semibold">Cargando perfil...</p></div>;
   if (error || !pet) return (
@@ -436,7 +464,7 @@ export default function PetPublicProfile() {
                               </span>
                               {med.frequency && (
                                 <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-semibold">
-                                  🕒 {med.frequency}
+                                   {med.frequency}
                                 </span>
                               )}
                             </div>
@@ -471,7 +499,7 @@ export default function PetPublicProfile() {
                     </div>
                   )}
 
-                  {/* 🏥 HISTORIAL MÉDICO - NUEVO */}
+                  {/* 🏥 HISTORIAL MÉDICO */}
                   {medicalHistory.length > 0 && (
                     <div className="mb-6 bg-purple-50 border-2 border-purple-400 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-purple-800 mb-3 flex items-center gap-2">
@@ -516,6 +544,44 @@ export default function PetPublicProfile() {
                     </div>
                   )}
 
+                  {/*  DESPARASITACIONES - NUEVO */}
+                  {dewormings.length > 0 && (
+                    <div className="mb-6 bg-emerald-50 border-2 border-emerald-400 rounded-xl p-5">
+                      <h4 className="text-lg font-bold text-emerald-800 mb-3 flex items-center gap-2">
+                        🦠 Desparasitaciones
+                      </h4>
+                      <div className="space-y-3">
+                        {dewormings.map((d: any) => {
+                          const nextStatus = getNextDewormingStatus(d.next_date);
+                          return (
+                            <div key={d.id} className="bg-white border border-emerald-200 rounded-lg p-3">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-semibold">
+                                  {dewormingTypeLabels[d.deworming_type] || d.deworming_type}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${nextStatus.color}`}>
+                                  {nextStatus.emoji} {nextStatus.text}
+                                </span>
+                              </div>
+                              <p className="font-bold text-emerald-900 text-base"> {d.product_name}</p>
+                              <p className="text-sm text-gray-700 mt-1">
+                                <span className="font-semibold text-gray-600">Aplicada:</span> {new Date(d.date_applied).toLocaleDateString('es-CO')}
+                              </p>
+                              {d.next_date && (
+                                <p className="text-sm text-gray-700 mt-1">
+                                  <span className="font-semibold text-gray-600">Próxima:</span> {new Date(d.next_date).toLocaleDateString('es-CO')}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-emerald-600 mt-3 italic">
+                        🦠 Registro de desparasitaciones de {pet.petName}.
+                      </p>
+                    </div>
+                  )}
+
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Informacion</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between py-2 border-b border-gray-100"><span className="text-gray-600">Especie</span><span className="font-semibold text-gray-800">{speciesNames[pet.species] || pet.species}</span></div>
@@ -527,7 +593,7 @@ export default function PetPublicProfile() {
                     <div className="flex justify-between py-2"><span className="text-gray-600">Registrado</span><span className="font-semibold text-gray-800">{new Date(pet.createdAt).toLocaleDateString("es-CO")}</span></div>
                   </div>
 
-                  {/*  VETERINARIO */}
+                  {/* 🩺 VETERINARIO */}
                   {vet && (
                     <div className="mt-6 bg-orange-50 border-2 border-orange-200 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-orange-800 mb-3 flex items-center gap-2">
@@ -543,7 +609,7 @@ export default function PetPublicProfile() {
                         </div>
                         {vet.clinic_name && (
                           <div className="flex items-start gap-2">
-                            <span className="text-orange-600 font-semibold"></span>
+                            <span className="text-orange-600 font-semibold">🏥</span>
                             <div>
                               <p className="text-xs text-gray-500">Clínica</p>
                               <p className="font-semibold text-gray-800">{vet.clinic_name}</p>
@@ -552,7 +618,7 @@ export default function PetPublicProfile() {
                         )}
                         {vet.phone && (
                           <div className="flex items-start gap-2">
-                            <span className="text-orange-600 font-semibold"></span>
+                            <span className="text-orange-600 font-semibold">📞</span>
                             <div>
                               <p className="text-xs text-gray-500">Teléfono</p>
                               <a href={`tel:${vet.phone}`} className="font-semibold text-orange-700 hover:text-orange-900 hover:underline">
@@ -572,7 +638,7 @@ export default function PetPublicProfile() {
                         )}
                         {vet.notes && (
                           <div className="flex items-start gap-2 mt-3 pt-3 border-t border-orange-200">
-                            <span className="text-orange-600 font-semibold"></span>
+                            <span className="text-orange-600 font-semibold">📝</span>
                             <div>
                               <p className="text-xs text-gray-500">Notas</p>
                               <p className="text-gray-700 italic">{vet.notes}</p>

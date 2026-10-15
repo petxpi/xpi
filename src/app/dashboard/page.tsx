@@ -64,7 +64,7 @@ export default function DashboardPage() {
     isPublic: true,
   });
 
-  //  ESTADOS HISTORIAL MÉDICO (NUEVO)
+  // 🏥 ESTADOS HISTORIAL MÉDICO
   const [showMedicalHistory, setShowMedicalHistory] = useState(false);
   const [selectedPetForMedicalHistory, setSelectedPetForMedicalHistory] = useState<any>(null);
   const [medicalHistory, setMedicalHistory] = useState<any[]>([]);
@@ -78,6 +78,19 @@ export default function DashboardPage() {
     vetName: "",
     cost: "",
     recovered: true,
+    isPublic: true,
+  });
+
+  //  ESTADOS DESPARASITACIONES
+  const [showDeworming, setShowDeworming] = useState(false);
+  const [selectedPetForDeworming, setSelectedPetForDeworming] = useState<any>(null);
+  const [dewormings, setDewormings] = useState<any[]>([]);
+  const [showAddDeworming, setShowAddDeworming] = useState(false);
+  const [dewormingForm, setDewormingForm] = useState({
+    dewormingType: "internal",
+    productName: "",
+    dateApplied: "",
+    nextDate: "",
     isPublic: true,
   });
 
@@ -499,7 +512,7 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message || "Error al eliminar vacuna"); }
   }
 
-  // 🩺 FUNCIONES VETERINARIO
+  //  FUNCIONES VETERINARIO
   async function openVet(pet: any) {
     setSelectedPetForVet(pet);
     setShowVet(true);
@@ -757,7 +770,7 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message || "Error al cambiar visibilidad"); }
   }
 
-  // 🏥 FUNCIONES HISTORIAL MÉDICO (NUEVO)
+  // 🏥 FUNCIONES HISTORIAL MÉDICO
   async function openMedicalHistory(pet: any) {
     setSelectedPetForMedicalHistory(pet);
     setShowMedicalHistory(true);
@@ -842,17 +855,98 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message); }
   }
 
+  // 🦠 FUNCIONES DESPARASITACIONES
+  async function openDeworming(pet: any) {
+    setSelectedPetForDeworming(pet);
+    setShowDeworming(true);
+    setShowAddDeworming(false);
+    setDewormings([]);
+    await loadDewormings(pet.id);
+  }
+
+  async function loadDewormings(petId: string) {
+    try {
+      const response = await fetch(`/api/pet-deworming?petId=${petId}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Error al cargar desparasitaciones");
+      setDewormings(data.dewormings || []);
+    } catch (err: any) {
+      console.error("Error:", err);
+      alert(err.message || "Error al cargar desparasitaciones");
+    }
+  }
+
+  async function handleAddDeworming(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedPetForDeworming) return;
+    if (!dewormingForm.productName.trim() || !dewormingForm.dateApplied) { 
+      alert("Debes indicar el producto y la fecha de aplicación"); 
+      return; 
+    }
+    
+    try {
+      const response = await fetch("/api/pet-deworming", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          petId: selectedPetForDeworming.id,
+          dewormingType: dewormingForm.dewormingType,
+          productName: dewormingForm.productName,
+          dateApplied: dewormingForm.dateApplied,
+          nextDate: dewormingForm.nextDate,
+          isPublic: dewormingForm.isPublic,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      alert("✅ Desparasitación registrada correctamente");
+      setShowAddDeworming(false);
+      setDewormingForm({
+        dewormingType: "internal", productName: "", dateApplied: "",
+        nextDate: "", isPublic: true,
+      });
+      await loadDewormings(selectedPetForDeworming.id);
+    } catch (err: any) {
+      alert(err.message || "Error al registrar desparasitación");
+    }
+  }
+
+  async function handleDeleteDeworming(dewormingId: string) {
+    if (!confirm("¿Estás seguro de eliminar esta desparasitación?")) return;
+    try {
+      const response = await fetch("/api/pet-deworming", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dewormingId, petId: selectedPetForDeworming.id }),
+      });
+      if (!response.ok) throw new Error("Error al eliminar");
+      await loadDewormings(selectedPetForDeworming.id);
+    } catch (err: any) { alert(err.message); }
+  }
+
+  async function handleToggleDewormingPublic(dewormingId: string) {
+    try {
+      const response = await fetch("/api/pet-deworming", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dewormingId, petId: selectedPetForDeworming.id }),
+      });
+      if (!response.ok) throw new Error("Error al cambiar visibilidad");
+      await loadDewormings(selectedPetForDeworming.id);
+    } catch (err: any) { alert(err.message); }
+  }
+
   function handleLogout() {
     document.cookie = "auth-token=; path=/; max-age=0";
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "", cat: "🐱", bird: "🐦", rabbit: "🐰", other: "🐾" };
+  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "🐦", rabbit: "🐰", other: "" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
-    home: { color: "bg-green-100 text-green-700", text: "En casa", emoji: "🏠" },
-    lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "🚨" },
+    home: { color: "bg-green-100 text-green-700", text: "En casa", emoji: "" },
+    lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "" },
   };
 
   function getSpeciesName(species: string): string { return speciesNames[species] || species; }
@@ -864,19 +958,19 @@ export default function DashboardPage() {
     const today = new Date();
     const diffDays = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} días)`, emoji: "⚠️" };
-    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Próxima (${diffDays} días)`, emoji: "" };
+    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Próxima (${diffDays} días)`, emoji: "⏰" };
     return { color: "bg-green-100 text-green-700", text: `Al día (${diffDays} días)`, emoji: "✅" };
   }
 
   const allergyTypeLabels: Record<string, string> = {
-    food: " Alimento",
+    food: "🍖 Alimento",
     medication: "💊 Medicamento",
-    environmental: "🌿 Ambiental",
+    environmental: " Ambiental",
   };
 
   const severityConfig: Record<string, { color: string; emoji: string }> = {
-    mild: { color: "bg-yellow-100 text-yellow-800", emoji: "️" },
-    moderate: { color: "bg-orange-100 text-orange-800", emoji: "⚠️" },
+    mild: { color: "bg-yellow-100 text-yellow-800", emoji: "⚠️" },
+    moderate: { color: "bg-orange-100 text-orange-800", emoji: "️" },
     severe: { color: "bg-red-100 text-red-800", emoji: "" },
   };
 
@@ -888,11 +982,27 @@ export default function DashboardPage() {
 
   const conditionTypeLabels: Record<string, string> = {
     surgery: "🔪 Cirugía",
-    illness: " Enfermedad",
-    injury: " Lesión",
-    diagnosis: " Diagnóstico",
-    other: "📋 Otro",
+    illness: "🤒 Enfermedad",
+    injury: "🤕 Lesión",
+    diagnosis: "🔬 Diagnóstico",
+    other: " Otro",
   };
+
+  const dewormingTypeLabels: Record<string, string> = {
+    internal: "💊 Interna",
+    external: " Externa",
+    both: "🧴 Interna + Externa",
+  };
+
+  function getNextDewormingStatus(nextDate: string): { color: string; text: string; emoji: string } {
+    if (!nextDate) return { color: "bg-gray-100 text-gray-700", text: "Sin próxima dosis", emoji: "" };
+    const next = new Date(nextDate);
+    const today = new Date();
+    const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} días)`, emoji: "⚠️" };
+    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Próxima (${diffDays} días)`, emoji: "⏰" };
+    return { color: "bg-green-100 text-green-700", text: `Al día (${diffDays} días)`, emoji: "✅" };
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -900,8 +1010,8 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-purple-600"> XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium"> Reportes</Link>
-            <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">⚙️ Contacto Público</Link>
+            <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium">📋 Reportes</Link>
+            <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">️ Contacto Público</Link>
             <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">👤 Mi Perfil</Link>
             <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesión</button>
           </div>
@@ -923,7 +1033,7 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold mb-4">Nueva Mascota</h3>
             <form onSubmit={handleCreatePet} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-dashed border-purple-300">
-                <label className="block text-sm font-medium text-gray-700 mb-2"> Foto de la mascota</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">📷 Foto de la mascota</label>
                 <input type="file" accept="image/*" onChange={(e) => handlePhotoSelect(e, "create")} disabled={uploading} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" />
                 {formData.photo && !uploading && (
                   <div className="mt-3 flex items-center gap-4">
@@ -954,7 +1064,7 @@ export default function DashboardPage() {
                   <option value="dog">🐶 Perro</option>
                   <option value="cat">🐱 Gato</option>
                   <option value="bird"> Ave</option>
-                  <option value="rabbit"> Conejo</option>
+                  <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
                 </select>
               </div>
@@ -989,7 +1099,7 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-center py-8">Cargando mascotas...</p>
         ) : pets.length === 0 ? (
           <div className="bg-white rounded-xl shadow p-12 text-center">
-            <p className="text-6xl mb-4">🐾</p>
+            <p className="text-6xl mb-4"></p>
             <p className="text-gray-600 mb-4">Aún no tienes mascotas registradas</p>
             <button onClick={() => setShowForm(true)} className="text-purple-600 font-semibold hover:underline">Agregar tu primera mascota</button>
           </div>
@@ -1024,8 +1134,8 @@ export default function DashboardPage() {
                   )}
                   <div className="space-y-1 text-sm text-gray-600">
                     <p>🐾 Especie: {getSpeciesName(pet.species)}</p>
-                    {pet.breed && <p> Raza: {pet.breed}</p>}
-                    {pet.color && <p> Color: {pet.color}</p>}
+                    {pet.breed && <p>🦴 Raza: {pet.breed}</p>}
+                    {pet.color && <p>🎨 Color: {pet.color}</p>}
                     {pet.sex && <p>⚧ Sexo: {getSexName(pet.sex)}</p>}
                   </div>
                   <div className="mt-4 pt-4 border-t">
@@ -1036,21 +1146,24 @@ export default function DashboardPage() {
                       <button onClick={() => openEditModal(pet)} className="flex-1 bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700">✏️ Editar</button>
                     </div>
                     <div className="flex gap-2 mb-2">
-                      <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700"> Ver Ubicación</button>
+                      <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">📍 Ver Ubicación</button>
                       <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">📜 Ver Historial</button>
                     </div>
                     <button onClick={() => openVaccines(pet)} className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700 mb-2 flex items-center justify-center gap-2">💉 Vacunas y Salud</button>
-                    <button onClick={() => openVet(pet)} className="w-full bg-orange-500 text-white text-sm py-2 rounded hover:bg-orange-600 mb-2 flex items-center justify-center gap-2 font-semibold"> Veterinario</button>
+                    <button onClick={() => openVet(pet)} className="w-full bg-orange-500 text-white text-sm py-2 rounded hover:bg-orange-600 mb-2 flex items-center justify-center gap-2 font-semibold">🩺 Veterinario</button>
                     <button onClick={() => openAllergies(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2 flex items-center justify-center gap-2 font-semibold">️ Alergias</button>
                     <button onClick={() => openMedications(pet)} className="w-full bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700 mb-2 flex items-center justify-center gap-2 font-semibold">💊 Medicación</button>
                     <button onClick={() => openMedicalHistory(pet)} className="w-full bg-purple-600 text-white text-sm py-2 rounded hover:bg-purple-700 mb-2 flex items-center justify-center gap-2 font-semibold">🏥 Historial Médico</button>
+                    
+                    {/*  NUEVO BOTÓN: DESPARASITACIONES */}
+                    <button onClick={() => openDeworming(pet)} className="w-full bg-emerald-600 text-white text-sm py-2 rounded hover:bg-emerald-700 mb-2 flex items-center justify-center gap-2 font-semibold">🦠 Desparasitaciones</button>
 
                     <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">📖 Diario de Vida</a>
 
                     {isLost ? (
                       <button onClick={() => reportFound(pet.id)} className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 mb-2">✅ Marcar como Encontrado</button>
                     ) : (
-                      <button onClick={() => setShowLostModal(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2">🚨 Reportar Perdido</button>
+                      <button onClick={() => setShowLostModal(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2"> Reportar Perdido</button>
                     )}
                     <button onClick={() => handleDeletePet(pet.id)} className="w-full bg-red-100 text-red-600 text-sm py-2 rounded hover:bg-red-200">🗑️ Eliminar</button>
                     <div className="mt-3 pt-3 border-t">
@@ -1072,13 +1185,13 @@ export default function DashboardPage() {
       {showCropModal && cropImage && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">📸 Ajusta la foto</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center"> Ajusta la foto</h3>
             <p className="text-sm text-gray-600 mb-4 text-center">Mueve y haz zoom para seleccionar la parte que quieres mostrar</p>
             <div className="relative w-full h-80 mb-6 bg-gray-100 rounded-lg overflow-hidden">
               <Cropper image={cropImage} crop={crop} zoom={zoom} aspect={1} cropShape="round" onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} />
             </div>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">🔍 Zoom: {Math.round(zoom * 100)}%</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2"> Zoom: {Math.round(zoom * 100)}%</label>
               <input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
             </div>
             <div className="flex gap-3">
@@ -1102,7 +1215,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-xs text-gray-500 mb-6">Escanea este código para ver el perfil de {selectedPet.name}</p>
               <div className="flex gap-3">
-                <button onClick={downloadQR} className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold">⬇️ Descargar QR</button>
+                <button onClick={downloadQR} className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-semibold">️ Descargar QR</button>
                 <button onClick={() => setSelectedPet(null)} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 font-semibold">Cerrar</button>
               </div>
             </div>
@@ -1133,7 +1246,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="mb-3 flex items-center gap-4">
                     <div className="w-24 h-24 rounded-full border-4 border-gray-300 bg-gray-100 flex items-center justify-center text-3xl">
-                      {speciesEmoji[formData.species] || "🐾"}
+                      {speciesEmoji[formData.species] || ""}
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-700">Sin foto</p>
@@ -1158,9 +1271,9 @@ export default function DashboardPage() {
                 <select required value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
                   <option value="">Seleccionar...</option>
                   <option value="dog">🐶 Perro</option>
-                  <option value="cat">🐱 Gato</option>
-                  <option value="bird"> Ave</option>
-                  <option value="rabbit"> Conejo</option>
+                  <option value="cat"> Gato</option>
+                  <option value="bird">🐦 Ave</option>
+                  <option value="rabbit">🐰 Conejo</option>
                   <option value="other">Otro</option>
                 </select>
               </div>
@@ -1243,7 +1356,7 @@ export default function DashboardPage() {
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <p className="text-sm font-bold text-purple-700">📍 Ubicación #{locationHistory.length - index}</p>
-                          <p className="text-xs text-gray-600 font-mono mt-1">🌐 Lat: {lat.toFixed(6)}, Lng: {lng.toFixed(6)}</p>
+                          <p className="text-xs text-gray-600 font-mono mt-1"> Lat: {lat.toFixed(6)}, Lng: {lng.toFixed(6)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500">{new Date(loc.created_at || loc.recorded_at).toLocaleString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
@@ -1255,7 +1368,7 @@ export default function DashboardPage() {
                           <p className="text-xs text-purple-600 italic">🔄 Obteniendo dirección...</p>
                         ) : address ? (
                           <div>
-                            <p className="text-xs text-gray-500 mb-1"> Dirección aproximada:</p>
+                            <p className="text-xs text-gray-500 mb-1">📍 Dirección aproximada:</p>
                             <p className="text-sm font-semibold text-gray-800">{address}</p>
                           </div>
                         ) : (
@@ -1288,7 +1401,7 @@ export default function DashboardPage() {
               <>
                 {vaccinations.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4">💉</div>
                     <p className="text-gray-600 mb-4">No hay registros de vacunas</p>
                     <button onClick={() => setShowAddVaccine(true)} className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 font-semibold">+ Agregar primera vacuna</button>
                   </div>
@@ -1310,7 +1423,7 @@ export default function DashboardPage() {
                             {vac.vet_name && (<div><p className="text-xs text-gray-500">Veterinario:</p><p className="font-semibold">{vac.vet_name}</p></div>)}
                             {vac.lot_number && (<div><p className="text-xs text-gray-500">Lote:</p><p className="font-mono text-xs">{vac.lot_number}</p></div>)}
                           </div>
-                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">️ Eliminar registro</button>
+                          <button onClick={() => handleDeleteVaccine(vac.id)} className="mt-3 text-xs text-red-600 hover:text-red-700 hover:underline">🗑️ Eliminar registro</button>
                         </div>
                       );
                     })}
@@ -1366,16 +1479,18 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* 🩺 MODAL VETERINARIO */}
       {showVet && selectedPetForVet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-lg w-full max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-800">🩺 Veterinario de {selectedPetForVet.name}</h3>
+                <h3 className="text-2xl font-bold text-gray-800"> Veterinario de {selectedPetForVet.name}</h3>
                 <p className="text-sm text-gray-500">Datos del veterinario de cabecera</p>
               </div>
               <button onClick={() => setShowVet(false)} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
+
             {loadingVet ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mx-auto mb-3"></div>
@@ -1384,43 +1499,55 @@ export default function DashboardPage() {
             ) : (
               <form onSubmit={handleSaveVet} className="space-y-4">
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                  <p className="text-sm text-orange-800"> <strong>Tip:</strong> Este es el veterinario principal de tu mascota.</p>
+                  <p className="text-sm text-orange-800">💡 <strong>Tip:</strong> Este es el veterinario principal de tu mascota.</p>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del veterinario *</label>
                   <input type="text" required value={vetData.vetName} onChange={(e) => setVetData({ ...vetData, vetName: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-orange-500 focus:outline-none" placeholder="Dr. Juan Pérez" />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la clínica</label>
                   <input type="text" value={vetData.clinicName} onChange={(e) => setVetData({ ...vetData, clinicName: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-orange-500 focus:outline-none" placeholder="Clínica Veterinaria San Roque" />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
                   <input type="tel" value={vetData.phone} onChange={(e) => setVetData({ ...vetData, phone: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-orange-500 focus:outline-none" placeholder="300 123 4567" />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
                   <input type="text" value={vetData.address} onChange={(e) => setVetData({ ...vetData, address: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-orange-500 focus:outline-none" placeholder="Calle 45 #12-34, Bogotá" />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Notas (horarios, especialidad, etc.)</label>
                   <textarea rows={3} value={vetData.notes} onChange={(e) => setVetData({ ...vetData, notes: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-orange-500 focus:outline-none" placeholder="Ej: Atiende de lunes a sábado de 8am a 6pm. Especialista en cardiología." />
                 </div>
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input type="checkbox" checked={vetIsPublic} onChange={(e) => setVetIsPublic(e.target.checked)} className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
                     <div>
                       <p className="font-semibold text-blue-900">👁️ Mostrar en perfil público</p>
-                      <p className="text-sm text-blue-700 mt-1">{vetIsPublic ? "✅ Cualquier persona que escanee el QR podrá ver los datos de este veterinario." : "🔒 Esta información será privada, solo visible para ti en el dashboard."}</p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        {vetIsPublic ? "✅ Cualquier persona que escanee el QR podrá ver los datos de este veterinario." : "🔒 Esta información será privada, solo visible para ti en el dashboard."}
+                      </p>
                     </div>
                   </label>
                 </div>
+
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <button type="submit" className="flex-1 bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 font-semibold">💾 Guardar</button>
                   <button type="button" onClick={() => setShowVet(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
                 </div>
+
                 {vetData.vetName && (
-                  <button type="button" onClick={handleDeleteVet} className="w-full bg-red-100 text-red-600 py-2 rounded-lg hover:bg-red-200 text-sm font-semibold">🗑️ Eliminar veterinario registrado</button>
+                  <button type="button" onClick={handleDeleteVet} className="w-full bg-red-100 text-red-600 py-2 rounded-lg hover:bg-red-200 text-sm font-semibold">
+                    🗑️ Eliminar veterinario registrado
+                  </button>
                 )}
               </form>
             )}
@@ -1428,22 +1555,25 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* ⚠️ MODAL ALERGIAS */}
       {showAllergies && selectedPetForAllergies && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-800">⚠️ Alergias de {selectedPetForAllergies.name}</h3>
+                <h3 className="text-2xl font-bold text-gray-800">️ Alergias de {selectedPetForAllergies.name}</h3>
                 <p className="text-sm text-gray-500">{allergies.length} alergia(s) registrada(s)</p>
               </div>
               <button onClick={() => { setShowAllergies(false); setShowAddAllergy(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
+
             {!showAddAllergy ? (
               <>
                 {allergies.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4">⚠️</div>
+                    <div className="text-6xl mb-4">️</div>
                     <p className="text-gray-600 mb-4">No hay alergias registradas</p>
+                    <p className="text-sm text-gray-500 mb-6">Registrar alergias ayuda a prevenir emergencias si tu mascota se pierde.</p>
                     <button onClick={() => setShowAddAllergy(true)} className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 font-semibold">+ Agregar primera alergia</button>
                   </div>
                 ) : (
@@ -1455,18 +1585,38 @@ export default function DashboardPage() {
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">{allergyTypeLabels[allergy.allergy_type] || allergy.allergy_type}</span>
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${severity.color}`}>{severity.emoji} {severityLabels[allergy.severity] || allergy.severity}</span>
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${allergy.public === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>{allergy.public === 1 ? "👁️ Público" : "🔒 Privado"}</span>
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">
+                                  {allergyTypeLabels[allergy.allergy_type] || allergy.allergy_type}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${severity.color}`}>
+                                  {severity.emoji} {severityLabels[allergy.severity] || allergy.severity}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${allergy.public === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                                  {allergy.public === 1 ? "👁️ Público" : " Privado"}
+                                </span>
                               </div>
                               <h4 className="font-bold text-red-900 text-lg"> {allergy.allergen}</h4>
                             </div>
                           </div>
-                          {allergy.symptoms && (<div className="mt-2"><p className="text-xs text-gray-500 font-semibold">Síntomas:</p><p className="text-sm text-gray-700">{allergy.symptoms}</p></div>)}
-                          {allergy.treatment && (<div className="mt-2"><p className="text-xs text-gray-500 font-semibold">Qué hacer:</p><p className="text-sm text-gray-700">{allergy.treatment}</p></div>)}
+                          {allergy.symptoms && (
+                            <div className="mt-2">
+                              <p className="text-xs text-gray-500 font-semibold">Síntomas:</p>
+                              <p className="text-sm text-gray-700">{allergy.symptoms}</p>
+                            </div>
+                          )}
+                          {allergy.treatment && (
+                            <div className="mt-2">
+                              <p className="text-xs text-gray-500 font-semibold">Qué hacer:</p>
+                              <p className="text-sm text-gray-700">{allergy.treatment}</p>
+                            </div>
+                          )}
                           <div className="flex gap-2 mt-3 pt-3 border-t border-red-100">
-                            <button onClick={() => handleToggleAllergyPublic(allergy.id)} className={`px-3 py-1 rounded text-xs font-semibold ${allergy.public === 1 ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>{allergy.public === 1 ? "👁️ Público" : "🔒 Privado"}</button>
-                            <button onClick={() => handleDeleteAllergy(allergy.id)} className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200">🗑️ Eliminar</button>
+                            <button onClick={() => handleToggleAllergyPublic(allergy.id)} className={`px-3 py-1 rounded text-xs font-semibold ${allergy.public === 1 ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                              {allergy.public === 1 ? "👁️ Público" : " Privado"}
+                            </button>
+                            <button onClick={() => handleDeleteAllergy(allergy.id)} className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200">
+                              🗑️ Eliminar
+                            </button>
                           </div>
                         </div>
                       );
@@ -1478,44 +1628,56 @@ export default function DashboardPage() {
             ) : (
               <form onSubmit={handleAddAllergy} className="space-y-4">
                 <h4 className="text-lg font-bold text-gray-800 mb-4">Registrar nueva alergia para {selectedPetForAllergies.name}</h4>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3"><p className="text-sm text-red-800">⚠️ <strong>Importante:</strong> Esta información puede salvar la vida de tu mascota en emergencias.</p></div>
+                
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-800">⚠️ <strong>Importante:</strong> Esta información puede salvar la vida de tu mascota en emergencias.</p>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de alergia *</label>
                   <select required value={allergyForm.allergyType} onChange={(e) => setAllergyForm({ ...allergyForm, allergyType: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none">
-                    <option value="food">🍖 Alimento</option>
+                    <option value="food"> Alimento</option>
                     <option value="medication">💊 Medicamento</option>
                     <option value="environmental">🌿 Ambiental</option>
                   </select>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Alérgeno (qué le da alergia) *</label>
                   <input type="text" required value={allergyForm.allergen} onChange={(e) => setAllergyForm({ ...allergyForm, allergen: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none" placeholder="Ej: Pollo, Penicilina, Polvo, Ácaros..." />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Gravedad *</label>
                   <select required value={allergyForm.severity} onChange={(e) => setAllergyForm({ ...allergyForm, severity: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none">
                     <option value="mild">⚠️ Leve (molestia, picazón)</option>
-                    <option value="moderate">⚠️ Moderada (vómito, diarrea)</option>
+                    <option value="moderate">️ Moderada (vómito, diarrea)</option>
                     <option value="severe">🚨 Grave (shock anafiláctico, riesgo de muerte)</option>
                   </select>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Síntomas</label>
                   <textarea rows={2} value={allergyForm.symptoms} onChange={(e) => setAllergyForm({ ...allergyForm, symptoms: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none" placeholder="Ej: Vómito, picazón en la piel, hinchazón..." />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Qué hacer si tiene reacción</label>
                   <textarea rows={2} value={allergyForm.treatment} onChange={(e) => setAllergyForm({ ...allergyForm, treatment: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none" placeholder="Ej: Suspender alimento, llevar al veterinario de inmediato, aplicar antihistamínico..." />
                 </div>
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input type="checkbox" checked={allergyForm.isPublic} onChange={(e) => setAllergyForm({ ...allergyForm, isPublic: e.target.checked })} className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
                     <div>
                       <p className="font-semibold text-blue-900">👁️ Mostrar en perfil público</p>
-                      <p className="text-sm text-blue-700 mt-1">{allergyForm.isPublic ? "✅ Cualquier persona que escanee el QR podrá ver esta alergia (recomendado para emergencias)." : "🔒 Esta información será privada, solo visible para ti en el dashboard."}</p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        {allergyForm.isPublic ? "✅ Cualquier persona que escanee el QR podrá ver esta alergia (recomendado para emergencias)." : "🔒 Esta información será privada, solo visible para ti en el dashboard."}
+                      </p>
                     </div>
                   </label>
                 </div>
+
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <button type="submit" className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 font-semibold">💾 Guardar alergia</button>
                   <button type="button" onClick={() => setShowAddAllergy(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
@@ -1526,22 +1688,25 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* 💊 MODAL MEDICACIÓN */}
       {showMedications && selectedPetForMedications && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-800">💊 Medicación de {selectedPetForMedications.name}</h3>
+                <h3 className="text-2xl font-bold text-gray-800"> Medicación de {selectedPetForMedications.name}</h3>
                 <p className="text-sm text-gray-500">{medications.length} medicamento(s) registrado(s)</p>
               </div>
               <button onClick={() => { setShowMedications(false); setShowAddMedication(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
+
             {!showAddMedication ? (
               <>
                 {medications.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">💊</div>
                     <p className="text-gray-600 mb-4">No hay medicamentos registrados</p>
+                    <p className="text-sm text-gray-500 mb-6">Registrar la medicación actual ayuda en caso de emergencias o cuidados temporales.</p>
                     <button onClick={() => setShowAddMedication(true)} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold">+ Agregar primer medicamento</button>
                   </div>
                 ) : (
@@ -1552,19 +1717,44 @@ export default function DashboardPage() {
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${med.public === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>{med.public === 1 ? "👁️ Público" : "🔒 Privado"}</span>
-                                {med.frequency && (<span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">🕒 {med.frequency}</span>)}
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${med.public === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                                  {med.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                                </span>
+                                {med.frequency && (
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">
+                                    🕒 {med.frequency}
+                                  </span>
+                                )}
                               </div>
                               <h4 className="font-bold text-blue-900 text-lg">💊 {med.medication_name}</h4>
                               <p className="text-sm text-gray-700 font-semibold">Dosis: {med.dosage}</p>
                             </div>
                           </div>
-                          {med.schedule && (<div className="mt-2"><p className="text-xs text-gray-500 font-semibold">Horario:</p><p className="text-sm text-gray-700">{med.schedule}</p></div>)}
-                          {med.reason && (<div className="mt-2"><p className="text-xs text-gray-500 font-semibold">Motivo:</p><p className="text-sm text-gray-700">{med.reason}</p></div>)}
-                          {med.prescribed_by && (<div className="mt-2"><p className="text-xs text-gray-500 font-semibold">Recetado por:</p><p className="text-sm text-gray-700">{med.prescribed_by}</p></div>)}
+                          {med.schedule && (
+                            <div className="mt-2">
+                              <p className="text-xs text-gray-500 font-semibold">Horario:</p>
+                              <p className="text-sm text-gray-700">{med.schedule}</p>
+                            </div>
+                          )}
+                          {med.reason && (
+                            <div className="mt-2">
+                              <p className="text-xs text-gray-500 font-semibold">Motivo:</p>
+                              <p className="text-sm text-gray-700">{med.reason}</p>
+                            </div>
+                          )}
+                          {med.prescribed_by && (
+                            <div className="mt-2">
+                              <p className="text-xs text-gray-500 font-semibold">Recetado por:</p>
+                              <p className="text-sm text-gray-700">{med.prescribed_by}</p>
+                            </div>
+                          )}
                           <div className="flex gap-2 mt-3 pt-3 border-t border-blue-100">
-                            <button onClick={() => handleToggleMedicationPublic(med.id)} className={`px-3 py-1 rounded text-xs font-semibold ${med.public === 1 ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>{med.public === 1 ? "👁️ Público" : "🔒 Privado"}</button>
-                            <button onClick={() => handleDeleteMedication(med.id)} className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200">🗑️ Eliminar</button>
+                            <button onClick={() => handleToggleMedicationPublic(med.id)} className={`px-3 py-1 rounded text-xs font-semibold ${med.public === 1 ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                              {med.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                            </button>
+                            <button onClick={() => handleDeleteMedication(med.id)} className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200">
+                              🗑️ Eliminar
+                            </button>
                           </div>
                         </div>
                       );
@@ -1576,7 +1766,11 @@ export default function DashboardPage() {
             ) : (
               <form onSubmit={handleAddMedication} className="space-y-4">
                 <h4 className="text-lg font-bold text-gray-800 mb-4">Registrar nuevo medicamento para {selectedPetForMedications.name}</h4>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3"><p className="text-sm text-blue-800"> <strong>Importante:</strong> Esta información es vital si alguien debe cuidar a tu mascota temporalmente.</p></div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">💡 <strong>Importante:</strong> Esta información es vital si alguien debe cuidar a tu mascota temporalmente.</p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del medicamento *</label>
@@ -1587,6 +1781,7 @@ export default function DashboardPage() {
                     <input type="text" required value={medicationForm.dosage} onChange={(e) => setMedicationForm({ ...medicationForm, dosage: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-600 focus:outline-none" placeholder="Ej: 5mg, 10ml, 1 pastilla..." />
                   </div>
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Frecuencia *</label>
@@ -1603,14 +1798,17 @@ export default function DashboardPage() {
                     <input type="text" value={medicationForm.schedule} onChange={(e) => setMedicationForm({ ...medicationForm, schedule: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-600 focus:outline-none" placeholder="Ej: 8:00 AM y 8:00 PM" />
                   </div>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Motivo / Condición</label>
                   <input type="text" value={medicationForm.reason} onChange={(e) => setMedicationForm({ ...medicationForm, reason: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-600 focus:outline-none" placeholder="Ej: Artritis, Alergia crónica, Epilepsia..." />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Recetado por</label>
                   <input type="text" value={medicationForm.prescribedBy} onChange={(e) => setMedicationForm({ ...medicationForm, prescribedBy: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-600 focus:outline-none" placeholder="Ej: Dr. Luis Guillermo Estrada" />
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de inicio</label>
@@ -1621,15 +1819,19 @@ export default function DashboardPage() {
                     <input type="date" value={medicationForm.endDate} onChange={(e) => setMedicationForm({ ...medicationForm, endDate: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-600 focus:outline-none" />
                   </div>
                 </div>
+
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input type="checkbox" checked={medicationForm.isPublic} onChange={(e) => setMedicationForm({ ...medicationForm, isPublic: e.target.checked })} className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
                     <div>
                       <p className="font-semibold text-blue-900">️ Mostrar en perfil público</p>
-                      <p className="text-sm text-blue-700 mt-1">{medicationForm.isPublic ? "✅ Cualquier persona que escanee el QR podrá ver esta medicación (recomendado para emergencias)." : "🔒 Esta información será privada, solo visible para ti en el dashboard."}</p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        {medicationForm.isPublic ? "✅ Cualquier persona que escanee el QR podrá ver esta medicación (recomendado para emergencias)." : "🔒 Esta información será privada, solo visible para ti en el dashboard."}
+                      </p>
                     </div>
                   </label>
                 </div>
+
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <button type="submit" className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">💾 Guardar medicamento</button>
                   <button type="button" onClick={() => setShowAddMedication(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
@@ -1656,7 +1858,7 @@ export default function DashboardPage() {
               <>
                 {medicalHistory.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4">🏥</div>
                     <p className="text-gray-600 mb-4">No hay historial médico registrado</p>
                     <button onClick={() => setShowAddMedicalEvent(true)} className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-semibold">+ Agregar primer evento</button>
                   </div>
@@ -1672,7 +1874,7 @@ export default function DashboardPage() {
                                   {conditionTypeLabels[event.condition_type] || event.condition_type}
                                 </span>
                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${event.public === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
-                                  {event.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                                  {event.public === 1 ? "️ Público" : "🔒 Privado"}
                                 </span>
                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${event.recovered === 1 ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
                                   {event.recovered === 1 ? "✅ Recuperado" : " En tratamiento"}
@@ -1718,9 +1920,9 @@ export default function DashboardPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de evento *</label>
                     <select required value={medicalHistoryForm.conditionType} onChange={(e) => setMedicalHistoryForm({ ...medicalHistoryForm, conditionType: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-purple-600 focus:outline-none">
-                      <option value="surgery">🔪 Cirugía</option>
+                      <option value="surgery"> Cirugía</option>
                       <option value="illness">🤒 Enfermedad</option>
-                      <option value="injury">🤕 Lesión</option>
+                      <option value="injury"> Lesión</option>
                       <option value="diagnosis">🔬 Diagnóstico</option>
                       <option value="other">📋 Otro</option>
                     </select>
@@ -1782,6 +1984,123 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* 🦠 MODAL DESPARASITACIONES */}
+      {showDeworming && selectedPetForDeworming && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800"> Desparasitaciones de {selectedPetForDeworming.name}</h3>
+                <p className="text-sm text-gray-500">{dewormings.length} registro(s)</p>
+              </div>
+              <button onClick={() => { setShowDeworming(false); setShowAddDeworming(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
+            </div>
+
+            {!showAddDeworming ? (
+              <>
+                {dewormings.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">🦠</div>
+                    <p className="text-gray-600 mb-4">No hay desparasitaciones registradas</p>
+                    <button onClick={() => setShowAddDeworming(true)} className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 font-semibold">+ Agregar primera desparasitación</button>
+                  </div>
+                ) : (
+                  <div className="space-y-3 mb-6">
+                    {dewormings.map((d: any) => {
+                      const nextStatus = getNextDewormingStatus(d.next_date);
+                      return (
+                        <div key={d.id} className="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2 flex-wrap gap-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-semibold">
+                                  {dewormingTypeLabels[d.deworming_type] || d.deworming_type}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${nextStatus.color}`}>
+                                  {nextStatus.emoji} {nextStatus.text}
+                                </span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${d.public === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                                  {d.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                                </span>
+                              </div>
+                              <h4 className="font-bold text-emerald-900 text-lg">🦠 {d.product_name}</h4>
+                              <p className="text-sm text-gray-500">📅 Aplicada: {new Date(d.date_applied).toLocaleDateString('es-CO')}</p>
+                              {d.next_date && (
+                                <p className="text-sm text-gray-500">📅 Próxima: {new Date(d.next_date).toLocaleDateString('es-CO')}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 mt-3 pt-3 border-t border-emerald-100">
+                            <button onClick={() => handleToggleDewormingPublic(d.id)} className={`px-3 py-1 rounded text-xs font-semibold ${d.public === 1 ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                              {d.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                            </button>
+                            <button onClick={() => handleDeleteDeworming(d.id)} className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200">
+                              🗑️ Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <button onClick={() => setShowAddDeworming(true)} className="w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 font-semibold flex items-center justify-center gap-2">+ Agregar nueva desparasitación</button>
+              </>
+            ) : (
+              <form onSubmit={handleAddDeworming} className="space-y-4">
+                <h4 className="text-lg font-bold text-gray-800 mb-4">Registrar desparasitación para {selectedPetForDeworming.name}</h4>
+                
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                  <p className="text-sm text-emerald-800">
+                    🦠 <strong>Importante:</strong> Las desparasitaciones regulares son esenciales para la salud de tu mascota.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de desparasitación *</label>
+                    <select required value={dewormingForm.dewormingType} onChange={(e) => setDewormingForm({ ...dewormingForm, dewormingType: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-emerald-600 focus:outline-none">
+                      <option value="internal">💊 Interna (parásitos intestinales)</option>
+                      <option value="external">🧴 Externa (pulgas, garrapatas)</option>
+                      <option value="both">💊🧴 Interna + Externa</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Producto utilizado *</label>
+                    <input type="text" required value={dewormingForm.productName} onChange={(e) => setDewormingForm({ ...dewormingForm, productName: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-emerald-600 focus:outline-none" placeholder="Ej: Drontal, NexGard, Frontline..." />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de aplicación *</label>
+                    <input type="date" required value={dewormingForm.dateApplied} onChange={(e) => setDewormingForm({ ...dewormingForm, dateApplied: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-emerald-600 focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Próxima dosis (recordatorio)</label>
+                    <input type="date" value={dewormingForm.nextDate} onChange={(e) => setDewormingForm({ ...dewormingForm, nextDate: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-emerald-600 focus:outline-none" />
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" checked={dewormingForm.isPublic} onChange={(e) => setDewormingForm({ ...dewormingForm, isPublic: e.target.checked })} className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
+                    <div>
+                      <p className="font-semibold text-blue-900">👁️ Mostrar en perfil público</p>
+                      <p className="text-sm text-blue-700 mt-1">{dewormingForm.isPublic ? "✅ Visible para quien escanee el QR." : " Solo visible en el dashboard."}</p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button type="submit" className="flex-1 bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 font-semibold">💾 Guardar desparasitación</button>
+                  <button type="button" onClick={() => setShowAddDeworming(false)} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold">Cancelar</button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
       {showLostModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full">
@@ -1798,7 +2117,7 @@ export default function DashboardPage() {
               <p className="text-sm text-red-800"><strong>⚠️ Importante:</strong> Esta información será visible públicamente para ayudar a encontrar a tu mascota.</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => { if (lostReport.trim()) reportLost(showLostModal.id, lostReport); else alert("Por favor describe lo sucedido"); }} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700"> Reportar Perdido</button>
+              <button onClick={() => { if (lostReport.trim()) reportLost(showLostModal.id, lostReport); else alert("Por favor describe lo sucedido"); }} className="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700">🚨 Reportar Perdido</button>
               <button onClick={() => { setShowLostModal(null); setLostReport(""); }} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
             </div>
           </div>
