@@ -34,7 +34,8 @@ export default function PetPublicProfile() {
   const [allergies, setAllergies] = useState<any[]>([]);
   const [medications, setMedications] = useState<any[]>([]);
   const [medicalHistory, setMedicalHistory] = useState<any[]>([]);
-  const [weights, setWeights] = useState<any[]>([]); // ⚖️ NUEVO: Estado de pesos
+  const [dewormings, setDewormings] = useState<any[]>([]);
+  const [weights, setWeights] = useState<any[]>([]);
 
   useEffect(() => {
     loadPet();
@@ -82,7 +83,12 @@ export default function PetPublicProfile() {
         setMedicalHistory(historyData.history || []);
       } catch (err) { console.error("Error al cargar historial medico:", err); }
 
-      // ⚖️ NUEVO: Cargar pesos públicos
+      try {
+        const dewormingResponse = await fetch(`/api/pet-deworming?petId=${publicId}&public=true`);
+        const dewormingData = await dewormingResponse.json();
+        setDewormings(dewormingData.dewormings || []);
+      } catch (err) { console.error("Error al cargar desparasitaciones:", err); }
+
       try {
         const weightsResponse = await fetch(`/api/pet-weights?petId=${publicId}&public=true`);
         const weightsData = await weightsResponse.json();
@@ -280,7 +286,6 @@ export default function PetPublicProfile() {
     return { color: "bg-green-100 text-green-700", text: `Al dia (${diffDays} dias)`, emoji: "" };
   }
 
-  // ⚖️ NUEVO: Función para calcular la tendencia de peso
   function getWeightTrend(current: number, previous: number): { text: string; color: string } {
     const diff = current - previous;
     if (diff > 0) return { text: `+${diff.toFixed(1)} kg`, color: "text-red-600" };
@@ -349,7 +354,6 @@ export default function PetPublicProfile() {
             {activeTab === "info" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  {/* ⚠️ ALERTA DE ALERGIAS */}
                   {allergies.length > 0 && (
                     <div className="mb-6 bg-red-50 border-2 border-red-400 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">⚠️ Alergias conocidas</h4>
@@ -369,11 +373,10 @@ export default function PetPublicProfile() {
                           );
                         })}
                       </div>
-                      <p className="text-xs text-red-600 mt-3 italic">⚠️ Esta informacion es critica. Por favor, tenla en cuenta si vas a darle comida o medicamentos.</p>
+                      <p className="text-xs text-red-600 mt-3 italic">️ Esta informacion es critica. Por favor, tenla en cuenta si vas a darle comida o medicamentos.</p>
                     </div>
                   )}
 
-                  {/* 💊 MEDICACIÓN ACTUAL */}
                   {medications.length > 0 && (
                     <div className="mb-6 bg-blue-50 border-2 border-blue-400 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">💊 Medicacion actual</h4>
@@ -396,7 +399,6 @@ export default function PetPublicProfile() {
                     </div>
                   )}
 
-                  {/* 🏥 HISTORIAL MÉDICO */}
                   {medicalHistory.length > 0 && (
                     <div className="mb-6 bg-purple-50 border-2 border-purple-400 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-purple-800 mb-3 flex items-center gap-2">🏥 Historial medico</h4>
@@ -419,10 +421,9 @@ export default function PetPublicProfile() {
                     </div>
                   )}
 
-                  {/* 🦠 DESPARASITACIONES */}
                   {dewormings.length > 0 && (
                     <div className="mb-6 bg-emerald-50 border-2 border-emerald-400 rounded-xl p-5">
-                      <h4 className="text-lg font-bold text-emerald-800 mb-3 flex items-center gap-2">🦠 Desparasitaciones</h4>
+                      <h4 className="text-lg font-bold text-emerald-800 mb-3 flex items-center gap-2"> Desparasitaciones</h4>
                       <div className="space-y-3">
                         {dewormings.map((d: any) => {
                           const nextStatus = getNextDewormingStatus(d.next_date);
@@ -439,14 +440,13 @@ export default function PetPublicProfile() {
                           );
                         })}
                       </div>
-                      <p className="text-xs text-emerald-600 mt-3 italic">🦠 Registro de desparasitaciones de {pet.petName}.</p>
+                      <p className="text-xs text-emerald-600 mt-3 italic"> Registro de desparasitaciones de {pet.petName}.</p>
                     </div>
                   )}
 
-                  {/* ⚖️ CONTROL DE PESO (NUEVO) */}
                   {weights.length > 0 && (
                     <div className="mb-6 bg-amber-50 border-2 border-amber-400 rounded-xl p-5">
-                      <h4 className="text-lg font-bold text-amber-800 mb-3 flex items-center gap-2">⚖️ Control de Peso</h4>
+                      <h4 className="text-lg font-bold text-amber-800 mb-3 flex items-center gap-2">️ Control de Peso</h4>
                       <div className="space-y-3">
                         {weights.map((w: any, index: number) => {
                           const prevWeight = weights[index + 1]?.weight;
@@ -463,7 +463,7 @@ export default function PetPublicProfile() {
                           );
                         })}
                       </div>
-                      <p className="text-xs text-amber-600 mt-3 italic">⚖️ Seguimiento del peso de {pet.petName}.</p>
+                      <p className="text-xs text-amber-600 mt-3 italic">️ Seguimiento del peso de {pet.petName}.</p>
                     </div>
                   )}
 
@@ -478,7 +478,6 @@ export default function PetPublicProfile() {
                     <div className="flex justify-between py-2"><span className="text-gray-600">Registrado</span><span className="font-semibold text-gray-800">{new Date(pet.createdAt).toLocaleDateString("es-CO")}</span></div>
                   </div>
 
-                  {/* 🩺 VETERINARIO */}
                   {vet && (
                     <div className="mt-6 bg-orange-50 border-2 border-orange-200 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-orange-800 mb-3 flex items-center gap-2">🩺 Veterinario de cabecera</h4>
@@ -487,7 +486,7 @@ export default function PetPublicProfile() {
                           <span className="text-orange-600 font-semibold"></span>
                           <div><p className="text-xs text-gray-500">Doctor(a)</p><p className="font-semibold text-gray-800">{vet.vet_name}</p></div>
                         </div>
-                        {vet.clinic_name && <div className="flex items-start gap-2"><span className="text-orange-600 font-semibold">🏥</span><div><p className="text-xs text-gray-500">Clinica</p><p className="font-semibold text-gray-800">{vet.clinic_name}</p></div></div>}
+                        {vet.clinic_name && <div className="flex items-start gap-2"><span className="text-orange-600 font-semibold"></span><div><p className="text-xs text-gray-500">Clinica</p><p className="font-semibold text-gray-800">{vet.clinic_name}</p></div></div>}
                         {vet.phone && <div className="flex items-start gap-2"><span className="text-orange-600 font-semibold">📞</span><div><p className="text-xs text-gray-500">Telefono</p><a href={`tel:${vet.phone}`} className="font-semibold text-orange-700 hover:text-orange-900 hover:underline">{vet.phone}</a></div></div>}
                         {vet.address && <div className="flex items-start gap-2"><span className="text-orange-600 font-semibold">📍</span><div><p className="text-xs text-gray-500">Direccion</p><p className="font-semibold text-gray-800">{vet.address}</p></div></div>}
                         {vet.notes && <div className="flex items-start gap-2 mt-3 pt-3 border-t border-orange-200"><span className="text-orange-600 font-semibold">📝</span><div><p className="text-xs text-gray-500">Notas</p><p className="text-gray-700 italic">{vet.notes}</p></div></div>}
