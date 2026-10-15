@@ -30,20 +30,11 @@ export default function PetPublicProfile() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loadingDiary, setLoadingDiary] = useState(false);
 
-  // 🩺 Estado para el veterinario
   const [vet, setVet] = useState<any>(null);
-
-  // ⚠️ Estado para las alergias
   const [allergies, setAllergies] = useState<any[]>([]);
-
-  // 💊 Estado para los medicamentos
   const [medications, setMedications] = useState<any[]>([]);
-
-  // 🏥 Estado para el historial médico
   const [medicalHistory, setMedicalHistory] = useState<any[]>([]);
-
-  //  Estado para las desparasitaciones (NUEVO)
-  const [dewormings, setDewormings] = useState<any[]>([]);
+  const [weights, setWeights] = useState<any[]>([]); // ⚖️ NUEVO: Estado de pesos
 
   useEffect(() => {
     loadPet();
@@ -67,52 +58,37 @@ export default function PetPublicProfile() {
       if (!response.ok) throw new Error(data.message || "Mascota no encontrada");
       setPet(data);
 
-      // 🩺 Cargar veterinario SOLO si es público
       try {
         const vetResponse = await fetch(`/api/veterinarians?petId=${publicId}&public=true`);
         const vetData = await vetResponse.json();
-        if (vetData.vet) {
-          setVet(vetData.vet);
-        }
-      } catch (err) {
-        console.error("Error al cargar veterinario:", err);
-      }
+        if (vetData.vet) setVet(vetData.vet);
+      } catch (err) { console.error("Error al cargar veterinario:", err); }
 
-      // ️ Cargar alergias públicas
       try {
         const allergiesResponse = await fetch(`/api/pet-allergies?petId=${publicId}&public=true`);
         const allergiesData = await allergiesResponse.json();
         setAllergies(allergiesData.allergies || []);
-      } catch (err) {
-        console.error("Error al cargar alergias:", err);
-      }
+      } catch (err) { console.error("Error al cargar alergias:", err); }
 
-      // 💊 Cargar medicamentos públicos
       try {
         const medsResponse = await fetch(`/api/pet-medications?petId=${publicId}&public=true`);
         const medsData = await medsResponse.json();
         setMedications(medsData.medications || []);
-      } catch (err) {
-        console.error("Error al cargar medicamentos:", err);
-      }
+      } catch (err) { console.error("Error al cargar medicamentos:", err); }
 
-      //  Cargar historial médico público
       try {
         const historyResponse = await fetch(`/api/pet-medical-history?petId=${publicId}&public=true`);
         const historyData = await historyResponse.json();
         setMedicalHistory(historyData.history || []);
-      } catch (err) {
-        console.error("Error al cargar historial médico:", err);
-      }
+      } catch (err) { console.error("Error al cargar historial medico:", err); }
 
-      // 🦠 NUEVO: Cargar desparasitaciones públicas
+      // ⚖️ NUEVO: Cargar pesos públicos
       try {
-        const dewormingResponse = await fetch(`/api/pet-deworming?petId=${publicId}&public=true`);
-        const dewormingData = await dewormingResponse.json();
-        setDewormings(dewormingData.dewormings || []);
-      } catch (err) {
-        console.error("Error al cargar desparasitaciones:", err);
-      }
+        const weightsResponse = await fetch(`/api/pet-weights?petId=${publicId}&public=true`);
+        const weightsData = await weightsResponse.json();
+        setWeights(weightsData.weights || []);
+      } catch (err) { console.error("Error al cargar pesos:", err); }
+
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -128,7 +104,6 @@ export default function PetPublicProfile() {
         fetch(`/api/pet-milestones?petId=${publicId}&public=true`),
         fetch(`/api/pet-documents?petId=${publicId}&public=true`),
       ]);
-
       const photosData = await photosRes.json();
       const milestonesData = await milestonesRes.json();
       const docsData = await docsRes.json();
@@ -275,69 +250,42 @@ export default function PetPublicProfile() {
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
 
   const categoryLabels: Record<string, string> = {
-    puppy: "Cachorro",
-    birthday: "Cumpleanos",
-    family: "Familia",
-    holiday: "Vacaciones",
-    trick: "Trucos",
-    adoption: "Adopcion",
-    achievement: "Logros",
-    first: "Primeras veces",
-    medical: "Medico",
-    other: "Otro",
+    puppy: "Cachorro", birthday: "Cumpleanos", family: "Familia", holiday: "Vacaciones",
+    trick: "Trucos", adoption: "Adopcion", achievement: "Logros", first: "Primeras veces",
+    medical: "Medico", other: "Otro",
   };
 
   const documentTypeLabels: Record<string, string> = {
-    pedigree: "Pedigree",
-    vaccine_cert: "Certificado de Vacunacion",
-    microchip: "Microchip",
-    sterilization: "Esterilizacion",
-    passport: "Pasaporte",
-    insurance: "Seguro",
-    other: "Otro",
+    pedigree: "Pedigree", vaccine_cert: "Certificado de Vacunacion", microchip: "Microchip",
+    sterilization: "Esterilizacion", passport: "Pasaporte", insurance: "Seguro", other: "Otro",
   };
 
-  const allergyTypeLabels: Record<string, string> = {
-    food: "🍖 Alimento",
-    medication: "💊 Medicamento",
-    environmental: "🌿 Ambiental",
-  };
-
+  const allergyTypeLabels: Record<string, string> = { food: "Alimento", medication: "Medicamento", environmental: "Ambiental" };
   const severityConfig: Record<string, { color: string; emoji: string }> = {
-    mild: { color: "bg-yellow-100 text-yellow-800", emoji: "⚠️" },
-    moderate: { color: "bg-orange-100 text-orange-800", emoji: "⚠️" },
+    mild: { color: "bg-yellow-100 text-yellow-800", emoji: "" },
+    moderate: { color: "bg-orange-100 text-orange-800", emoji: "" },
     severe: { color: "bg-red-100 text-red-800", emoji: "" },
   };
-
-  const severityLabels: Record<string, string> = {
-    mild: "Leve",
-    moderate: "Moderada",
-    severe: "Grave",
-  };
-
-  const conditionTypeLabels: Record<string, string> = {
-    surgery: "🔪 Cirugía",
-    illness: "🤒 Enfermedad",
-    injury: "🤕 Lesión",
-    diagnosis: "🔬 Diagnóstico",
-    other: "📋 Otro",
-  };
-
-  // 🦠 Labels para desparasitaciones (NUEVO)
-  const dewormingTypeLabels: Record<string, string> = {
-    internal: "💊 Interna",
-    external: " Externa",
-    both: "💊🧴 Interna + Externa",
-  };
+  const severityLabels: Record<string, string> = { mild: "Leve", moderate: "Moderada", severe: "Grave" };
+  const conditionTypeLabels: Record<string, string> = { surgery: "Cirugia", illness: "Enfermedad", injury: "Lesion", diagnosis: "Diagnostico", other: "Otro" };
+  const dewormingTypeLabels: Record<string, string> = { internal: "Interna", external: "Externa", both: "Interna + Externa" };
 
   function getNextDewormingStatus(nextDate: string): { color: string; text: string; emoji: string } {
-    if (!nextDate) return { color: "bg-gray-100 text-gray-700", text: "Sin próxima dosis", emoji: "" };
+    if (!nextDate) return { color: "bg-gray-100 text-gray-700", text: "Sin proxima dosis", emoji: "" };
     const next = new Date(nextDate);
     const today = new Date();
     const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} días)`, emoji: "⚠️" };
-    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Próxima (${diffDays} días)`, emoji: "⏰" };
-    return { color: "bg-green-100 text-green-700", text: `Al día (${diffDays} días)`, emoji: "✅" };
+    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} dias)`, emoji: "" };
+    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Proxima (${diffDays} dias)`, emoji: "" };
+    return { color: "bg-green-100 text-green-700", text: `Al dia (${diffDays} dias)`, emoji: "" };
+  }
+
+  // ⚖️ NUEVO: Función para calcular la tendencia de peso
+  function getWeightTrend(current: number, previous: number): { text: string; color: string } {
+    const diff = current - previous;
+    if (diff > 0) return { text: `+${diff.toFixed(1)} kg`, color: "text-red-600" };
+    if (diff < 0) return { text: `${diff.toFixed(1)} kg`, color: "text-green-600" };
+    return { text: "0 kg", color: "text-gray-600" };
   }
 
   if (loading) return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center"><p className="text-purple-600 font-semibold">Cargando perfil...</p></div>;
@@ -391,18 +339,10 @@ export default function PetPublicProfile() {
           </div>
 
           <div className="flex border-b border-gray-200 overflow-x-auto">
-            <button onClick={() => setActiveTab("info")} className={`flex-1 px-4 py-3 font-semibold transition whitespace-nowrap ${activeTab === "info" ? "border-b-2 border-purple-600 text-purple-600" : "text-gray-600 hover:text-gray-800"}`}>
-              Informacion
-            </button>
-            <button onClick={() => setActiveTab("gallery")} className={`flex-1 px-4 py-3 font-semibold transition whitespace-nowrap ${activeTab === "gallery" ? "border-b-2 border-purple-600 text-purple-600" : "text-gray-600 hover:text-gray-800"}`}>
-              Galeria ({photos.length})
-            </button>
-            <button onClick={() => setActiveTab("history")} className={`flex-1 px-4 py-3 font-semibold transition whitespace-nowrap ${activeTab === "history" ? "border-b-2 border-purple-600 text-purple-600" : "text-gray-600 hover:text-gray-800"}`}>
-              Historia ({milestones.length})
-            </button>
-            <button onClick={() => setActiveTab("docs")} className={`flex-1 px-4 py-3 font-semibold transition whitespace-nowrap ${activeTab === "docs" ? "border-b-2 border-purple-600 text-purple-600" : "text-gray-600 hover:text-gray-800"}`}>
-              Documentos ({documents.length})
-            </button>
+            <button onClick={() => setActiveTab("info")} className={`flex-1 px-4 py-3 font-semibold transition whitespace-nowrap ${activeTab === "info" ? "border-b-2 border-purple-600 text-purple-600" : "text-gray-600 hover:text-gray-800"}`}>Informacion</button>
+            <button onClick={() => setActiveTab("gallery")} className={`flex-1 px-4 py-3 font-semibold transition whitespace-nowrap ${activeTab === "gallery" ? "border-b-2 border-purple-600 text-purple-600" : "text-gray-600 hover:text-gray-800"}`}>Galeria ({photos.length})</button>
+            <button onClick={() => setActiveTab("history")} className={`flex-1 px-4 py-3 font-semibold transition whitespace-nowrap ${activeTab === "history" ? "border-b-2 border-purple-600 text-purple-600" : "text-gray-600 hover:text-gray-800"}`}>Historia ({milestones.length})</button>
+            <button onClick={() => setActiveTab("docs")} className={`flex-1 px-4 py-3 font-semibold transition whitespace-nowrap ${activeTab === "docs" ? "border-b-2 border-purple-600 text-purple-600" : "text-gray-600 hover:text-gray-800"}`}>Documentos ({documents.length})</button>
           </div>
 
           <div className="p-8">
@@ -412,173 +352,118 @@ export default function PetPublicProfile() {
                   {/* ⚠️ ALERTA DE ALERGIAS */}
                   {allergies.length > 0 && (
                     <div className="mb-6 bg-red-50 border-2 border-red-400 rounded-xl p-5">
-                      <h4 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">
-                        ⚠️ Alergias conocidas
-                      </h4>
+                      <h4 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">⚠️ Alergias conocidas</h4>
                       <div className="space-y-3">
                         {allergies.map((allergy: any) => {
                           const severity = severityConfig[allergy.severity] || severityConfig.moderate;
                           return (
                             <div key={allergy.id} className="bg-white border border-red-200 rounded-lg p-3">
                               <div className="flex flex-wrap items-center gap-2 mb-2">
-                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">
-                                  {allergyTypeLabels[allergy.allergy_type] || allergy.allergy_type}
-                                </span>
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${severity.color}`}>
-                                  {severity.emoji} {severityLabels[allergy.severity] || allergy.severity}
-                                </span>
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">{allergyTypeLabels[allergy.allergy_type] || allergy.allergy_type}</span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${severity.color}`}>{severity.emoji} {severityLabels[allergy.severity] || allergy.severity}</span>
                               </div>
-                              <p className="font-bold text-red-900 text-base"> {allergy.allergen}</p>
-                              {allergy.symptoms && (
-                                <p className="text-sm text-gray-700 mt-2">
-                                  <span className="font-semibold text-gray-600">Síntomas:</span> {allergy.symptoms}
-                                </p>
-                              )}
-                              {allergy.treatment && (
-                                <p className="text-sm text-gray-700 mt-1">
-                                  <span className="font-semibold text-gray-600">Qué hacer:</span> {allergy.treatment}
-                                </p>
-                              )}
+                              <p className="font-bold text-red-900 text-base">{allergy.allergen}</p>
+                              {allergy.symptoms && <p className="text-sm text-gray-700 mt-2"><span className="font-semibold text-gray-600">Sintomas:</span> {allergy.symptoms}</p>}
+                              {allergy.treatment && <p className="text-sm text-gray-700 mt-1"><span className="font-semibold text-gray-600">Que hacer:</span> {allergy.treatment}</p>}
                             </div>
                           );
                         })}
                       </div>
-                      <p className="text-xs text-red-600 mt-3 italic">
-                        ⚠️ Esta información es crítica. Por favor, tenla en cuenta si vas a darle comida o medicamentos.
-                      </p>
+                      <p className="text-xs text-red-600 mt-3 italic">⚠️ Esta informacion es critica. Por favor, tenla en cuenta si vas a darle comida o medicamentos.</p>
                     </div>
                   )}
 
                   {/* 💊 MEDICACIÓN ACTUAL */}
                   {medications.length > 0 && (
                     <div className="mb-6 bg-blue-50 border-2 border-blue-400 rounded-xl p-5">
-                      <h4 className="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">
-                        💊 Medicación actual
-                      </h4>
+                      <h4 className="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">💊 Medicacion actual</h4>
                       <div className="space-y-3">
                         {medications.map((med: any) => (
                           <div key={med.id} className="bg-white border border-blue-200 rounded-lg p-3">
                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">
-                                💊 {med.medication_name}
-                              </span>
-                              {med.frequency && (
-                                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-semibold">
-                                   {med.frequency}
-                                </span>
-                              )}
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">💊 {med.medication_name}</span>
+                              {med.frequency && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-semibold">{med.frequency}</span>}
                             </div>
                             <p className="font-bold text-blue-900 text-base">Dosis: {med.dosage}</p>
-                            {med.schedule && (
-                              <p className="text-sm text-gray-700 mt-1">
-                                <span className="font-semibold text-gray-600">Horario:</span> {med.schedule}
-                              </p>
-                            )}
-                            {med.reason && (
-                              <p className="text-sm text-gray-700 mt-1">
-                                <span className="font-semibold text-gray-600">Motivo:</span> {med.reason}
-                              </p>
-                            )}
-                            {med.prescribed_by && (
-                              <p className="text-sm text-gray-700 mt-1">
-                                <span className="font-semibold text-gray-600">Recetado por:</span> {med.prescribed_by}
-                              </p>
-                            )}
-                            {med.start_date && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                Desde: {new Date(med.start_date).toLocaleDateString('es-CO')}
-                                {med.end_date && ` hasta ${new Date(med.end_date).toLocaleDateString('es-CO')}`}
-                              </p>
-                            )}
+                            {med.schedule && <p className="text-sm text-gray-700 mt-1"><span className="font-semibold text-gray-600">Horario:</span> {med.schedule}</p>}
+                            {med.reason && <p className="text-sm text-gray-700 mt-1"><span className="font-semibold text-gray-600">Motivo:</span> {med.reason}</p>}
+                            {med.prescribed_by && <p className="text-sm text-gray-700 mt-1"><span className="font-semibold text-gray-600">Recetado por:</span> {med.prescribed_by}</p>}
+                            {med.start_date && <p className="text-xs text-gray-500 mt-1">Desde: {new Date(med.start_date).toLocaleDateString('es-CO')}{med.end_date && ` hasta ${new Date(med.end_date).toLocaleDateString('es-CO')}`}</p>}
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-blue-600 mt-3 italic">
-                        💊 Información importante para el cuidado diario de {pet.petName}.
-                      </p>
+                      <p className="text-xs text-blue-600 mt-3 italic">💊 Informacion importante para el cuidado diario de {pet.petName}.</p>
                     </div>
                   )}
 
                   {/* 🏥 HISTORIAL MÉDICO */}
                   {medicalHistory.length > 0 && (
                     <div className="mb-6 bg-purple-50 border-2 border-purple-400 rounded-xl p-5">
-                      <h4 className="text-lg font-bold text-purple-800 mb-3 flex items-center gap-2">
-                        🏥 Historial médico
-                      </h4>
+                      <h4 className="text-lg font-bold text-purple-800 mb-3 flex items-center gap-2">🏥 Historial medico</h4>
                       <div className="space-y-3">
                         {medicalHistory.map((event: any) => (
                           <div key={event.id} className="bg-white border border-purple-200 rounded-lg p-3">
                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">
-                                {conditionTypeLabels[event.condition_type] || event.condition_type}
-                              </span>
-                              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-semibold">
-                                📅 {new Date(event.date).toLocaleDateString('es-CO')}
-                              </span>
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${event.recovered === 1 ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                                {event.recovered === 1 ? "✅ Recuperado" : "⏳ En tratamiento"}
-                              </span>
+                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">{conditionTypeLabels[event.condition_type] || event.condition_type}</span>
+                              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-semibold">📅 {new Date(event.date).toLocaleDateString('es-CO')}</span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${event.recovered === 1 ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>{event.recovered === 1 ? "Recuperado" : "En tratamiento"}</span>
                             </div>
-                            <p className="font-bold text-purple-900 text-base"> {event.condition}</p>
-                            {event.description && (
-                              <p className="text-sm text-gray-700 mt-1">
-                                <span className="font-semibold text-gray-600">Descripción:</span> {event.description}
-                              </p>
-                            )}
-                            {event.treatment && (
-                              <p className="text-sm text-gray-700 mt-1">
-                                <span className="font-semibold text-gray-600">Tratamiento:</span> {event.treatment}
-                              </p>
-                            )}
-                            {event.vet_name && (
-                              <p className="text-sm text-gray-700 mt-1">
-                                <span className="font-semibold text-gray-600">Atendido por:</span> {event.vet_name}
-                              </p>
-                            )}
+                            <p className="font-bold text-purple-900 text-base">{event.condition}</p>
+                            {event.description && <p className="text-sm text-gray-700 mt-1"><span className="font-semibold text-gray-600">Descripcion:</span> {event.description}</p>}
+                            {event.treatment && <p className="text-sm text-gray-700 mt-1"><span className="font-semibold text-gray-600">Tratamiento:</span> {event.treatment}</p>}
+                            {event.vet_name && <p className="text-sm text-gray-700 mt-1"><span className="font-semibold text-gray-600">Atendido por:</span> {event.vet_name}</p>}
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-purple-600 mt-3 italic">
-                        🏥 Antecedentes médicos importantes de {pet.petName}.
-                      </p>
+                      <p className="text-xs text-purple-600 mt-3 italic">🏥 Antecedentes medicos importantes de {pet.petName}.</p>
                     </div>
                   )}
 
-                  {/*  DESPARASITACIONES - NUEVO */}
+                  {/* 🦠 DESPARASITACIONES */}
                   {dewormings.length > 0 && (
                     <div className="mb-6 bg-emerald-50 border-2 border-emerald-400 rounded-xl p-5">
-                      <h4 className="text-lg font-bold text-emerald-800 mb-3 flex items-center gap-2">
-                        🦠 Desparasitaciones
-                      </h4>
+                      <h4 className="text-lg font-bold text-emerald-800 mb-3 flex items-center gap-2">🦠 Desparasitaciones</h4>
                       <div className="space-y-3">
                         {dewormings.map((d: any) => {
                           const nextStatus = getNextDewormingStatus(d.next_date);
                           return (
                             <div key={d.id} className="bg-white border border-emerald-200 rounded-lg p-3">
                               <div className="flex flex-wrap items-center gap-2 mb-2">
-                                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-semibold">
-                                  {dewormingTypeLabels[d.deworming_type] || d.deworming_type}
-                                </span>
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${nextStatus.color}`}>
-                                  {nextStatus.emoji} {nextStatus.text}
-                                </span>
+                                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-semibold">{dewormingTypeLabels[d.deworming_type] || d.deworming_type}</span>
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${nextStatus.color}`}>{nextStatus.emoji} {nextStatus.text}</span>
                               </div>
-                              <p className="font-bold text-emerald-900 text-base"> {d.product_name}</p>
-                              <p className="text-sm text-gray-700 mt-1">
-                                <span className="font-semibold text-gray-600">Aplicada:</span> {new Date(d.date_applied).toLocaleDateString('es-CO')}
-                              </p>
-                              {d.next_date && (
-                                <p className="text-sm text-gray-700 mt-1">
-                                  <span className="font-semibold text-gray-600">Próxima:</span> {new Date(d.next_date).toLocaleDateString('es-CO')}
-                                </p>
-                              )}
+                              <p className="font-bold text-emerald-900 text-base">{d.product_name}</p>
+                              <p className="text-sm text-gray-700 mt-1"><span className="font-semibold text-gray-600">Aplicada:</span> {new Date(d.date_applied).toLocaleDateString('es-CO')}</p>
+                              {d.next_date && <p className="text-sm text-gray-700 mt-1"><span className="font-semibold text-gray-600">Proxima:</span> {new Date(d.next_date).toLocaleDateString('es-CO')}</p>}
                             </div>
                           );
                         })}
                       </div>
-                      <p className="text-xs text-emerald-600 mt-3 italic">
-                        🦠 Registro de desparasitaciones de {pet.petName}.
-                      </p>
+                      <p className="text-xs text-emerald-600 mt-3 italic">🦠 Registro de desparasitaciones de {pet.petName}.</p>
+                    </div>
+                  )}
+
+                  {/* ⚖️ CONTROL DE PESO (NUEVO) */}
+                  {weights.length > 0 && (
+                    <div className="mb-6 bg-amber-50 border-2 border-amber-400 rounded-xl p-5">
+                      <h4 className="text-lg font-bold text-amber-800 mb-3 flex items-center gap-2">⚖️ Control de Peso</h4>
+                      <div className="space-y-3">
+                        {weights.map((w: any, index: number) => {
+                          const prevWeight = weights[index + 1]?.weight;
+                          const trend = prevWeight ? getWeightTrend(w.weight, prevWeight) : null;
+                          return (
+                            <div key={w.id} className="bg-white border border-amber-200 rounded-lg p-3">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-semibold">📅 {new Date(w.date).toLocaleDateString('es-CO')}</span>
+                                {trend && <span className={`px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 ${trend.color}`}>{trend.text}</span>}
+                              </div>
+                              <p className="font-bold text-amber-900 text-2xl">{w.weight} kg</p>
+                              {w.notes && <p className="text-sm text-gray-600 mt-1">{w.notes}</p>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-amber-600 mt-3 italic">⚖️ Seguimiento del peso de {pet.petName}.</p>
                     </div>
                   )}
 
@@ -596,55 +481,16 @@ export default function PetPublicProfile() {
                   {/* 🩺 VETERINARIO */}
                   {vet && (
                     <div className="mt-6 bg-orange-50 border-2 border-orange-200 rounded-xl p-5">
-                      <h4 className="text-lg font-bold text-orange-800 mb-3 flex items-center gap-2">
-                        🩺 Veterinario de cabecera
-                      </h4>
+                      <h4 className="text-lg font-bold text-orange-800 mb-3 flex items-center gap-2">🩺 Veterinario de cabecera</h4>
                       <div className="space-y-2 text-sm">
                         <div className="flex items-start gap-2">
                           <span className="text-orange-600 font-semibold"></span>
-                          <div>
-                            <p className="text-xs text-gray-500">Doctor(a)</p>
-                            <p className="font-semibold text-gray-800">{vet.vet_name}</p>
-                          </div>
+                          <div><p className="text-xs text-gray-500">Doctor(a)</p><p className="font-semibold text-gray-800">{vet.vet_name}</p></div>
                         </div>
-                        {vet.clinic_name && (
-                          <div className="flex items-start gap-2">
-                            <span className="text-orange-600 font-semibold">🏥</span>
-                            <div>
-                              <p className="text-xs text-gray-500">Clínica</p>
-                              <p className="font-semibold text-gray-800">{vet.clinic_name}</p>
-                            </div>
-                          </div>
-                        )}
-                        {vet.phone && (
-                          <div className="flex items-start gap-2">
-                            <span className="text-orange-600 font-semibold">📞</span>
-                            <div>
-                              <p className="text-xs text-gray-500">Teléfono</p>
-                              <a href={`tel:${vet.phone}`} className="font-semibold text-orange-700 hover:text-orange-900 hover:underline">
-                                {vet.phone}
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                        {vet.address && (
-                          <div className="flex items-start gap-2">
-                            <span className="text-orange-600 font-semibold">📍</span>
-                            <div>
-                              <p className="text-xs text-gray-500">Dirección</p>
-                              <p className="font-semibold text-gray-800">{vet.address}</p>
-                            </div>
-                          </div>
-                        )}
-                        {vet.notes && (
-                          <div className="flex items-start gap-2 mt-3 pt-3 border-t border-orange-200">
-                            <span className="text-orange-600 font-semibold">📝</span>
-                            <div>
-                              <p className="text-xs text-gray-500">Notas</p>
-                              <p className="text-gray-700 italic">{vet.notes}</p>
-                            </div>
-                          </div>
-                        )}
+                        {vet.clinic_name && <div className="flex items-start gap-2"><span className="text-orange-600 font-semibold">🏥</span><div><p className="text-xs text-gray-500">Clinica</p><p className="font-semibold text-gray-800">{vet.clinic_name}</p></div></div>}
+                        {vet.phone && <div className="flex items-start gap-2"><span className="text-orange-600 font-semibold">📞</span><div><p className="text-xs text-gray-500">Telefono</p><a href={`tel:${vet.phone}`} className="font-semibold text-orange-700 hover:text-orange-900 hover:underline">{vet.phone}</a></div></div>}
+                        {vet.address && <div className="flex items-start gap-2"><span className="text-orange-600 font-semibold">📍</span><div><p className="text-xs text-gray-500">Direccion</p><p className="font-semibold text-gray-800">{vet.address}</p></div></div>}
+                        {vet.notes && <div className="flex items-start gap-2 mt-3 pt-3 border-t border-orange-200"><span className="text-orange-600 font-semibold">📝</span><div><p className="text-xs text-gray-500">Notas</p><p className="text-gray-700 italic">{vet.notes}</p></div></div>}
                       </div>
                     </div>
                   )}
@@ -653,18 +499,10 @@ export default function PetPublicProfile() {
                 <div>
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Contacto Directo</h3>
                   <div className="space-y-3 mb-6">
-                    {pet.showPhone && pet.ownerPhone && (
-                      <a href={`tel:${pet.ownerPhone}`} className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-200 transition">Llamar: {pet.ownerPhone}</a>
-                    )}
-                    {pet.showWhatsApp && pet.ownerWhatsApp && (
-                      <a href={`https://wa.me/${pet.ownerWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola, encontre a ${pet.petName}.`)}`} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition">WhatsApp</a>
-                    )}
-                    {pet.showEmail && pet.ownerEmail && (
-                      <a href={`mailto:${pet.ownerEmail}?subject=${encodeURIComponent(`Encontre a ${pet.petName}`)}&body=${encodeURIComponent(`Hola, encontre a tu mascota ${pet.petName}.`)}`} className="w-full flex items-center justify-center gap-2 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition">Enviar Correo</a>
-                    )}
-                    {!pet.showPhone && !pet.showWhatsApp && !pet.showEmail && (
-                      <p className="text-sm text-gray-500 text-center italic bg-gray-50 p-3 rounded-lg">El dueno prefiere que uses el formulario de reporte.</p>
-                    )}
+                    {pet.showPhone && pet.ownerPhone && (<a href={`tel:${pet.ownerPhone}`} className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-200 transition">Llamar: {pet.ownerPhone}</a>)}
+                    {pet.showWhatsApp && pet.ownerWhatsApp && (<a href={`https://wa.me/${pet.ownerWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola, encontre a ${pet.petName}.`)}`} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition">WhatsApp</a>)}
+                    {pet.showEmail && pet.ownerEmail && (<a href={`mailto:${pet.ownerEmail}?subject=${encodeURIComponent(`Encontre a ${pet.petName}`)}&body=${encodeURIComponent(`Hola, encontre a tu mascota ${pet.petName}.`)}`} className="w-full flex items-center justify-center gap-2 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition">Enviar Correo</a>)}
+                    {!pet.showPhone && !pet.showWhatsApp && !pet.showEmail && (<p className="text-sm text-gray-500 text-center italic bg-gray-50 p-3 rounded-lg">El dueno prefiere que uses el formulario de reporte.</p>)}
                   </div>
 
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Codigo QR</h3>
@@ -690,11 +528,7 @@ export default function PetPublicProfile() {
             {activeTab === "gallery" && (
               <div>
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Galeria de {pet.petName}</h3>
-                {loadingDiary ? (
-                  <div className="text-center py-8"><p className="text-gray-600">Cargando fotos...</p></div>
-                ) : photos.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">Aun no hay fotos publicas en la galeria</div>
-                ) : (
+                {loadingDiary ? (<div className="text-center py-8"><p className="text-gray-600">Cargando fotos...</p></div>) : photos.length === 0 ? (<div className="text-center py-8 text-gray-500">Aun no hay fotos publicas en la galeria</div>) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {photos.map((photo: any) => (
                       <div key={photo.id} className="bg-white rounded-lg shadow overflow-hidden">
@@ -714,17 +548,11 @@ export default function PetPublicProfile() {
             {activeTab === "history" && (
               <div>
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Historia de Vida</h3>
-                {loadingDiary ? (
-                  <div className="text-center py-8"><p className="text-gray-600">Cargando hitos...</p></div>
-                ) : milestones.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">Aun no hay hitos publicos registrados</div>
-                ) : (
+                {loadingDiary ? (<div className="text-center py-8"><p className="text-gray-600">Cargando hitos...</p></div>) : milestones.length === 0 ? (<div className="text-center py-8 text-gray-500">Aun no hay hitos publicos registrados</div>) : (
                   <div className="space-y-4">
                     {milestones.map((m: any) => (
                       <div key={m.id} className="bg-white rounded-lg shadow p-6 flex gap-4">
-                        {m.photo_url && (
-                          <img src={m.photo_url} alt={m.title} className="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-white flex-shrink-0" />
-                        )}
+                        {m.photo_url && (<img src={m.photo_url} alt={m.title} className="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-white flex-shrink-0" />)}
                         <div className="flex-1">
                           <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">{categoryLabels[m.category] || m.category}</span>
                           <h3 className="text-lg font-semibold text-gray-800 mt-2">{m.title}</h3>
@@ -741,11 +569,7 @@ export default function PetPublicProfile() {
             {activeTab === "docs" && (
               <div>
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Documentos Oficiales</h3>
-                {loadingDiary ? (
-                  <div className="text-center py-8"><p className="text-gray-600">Cargando documentos...</p></div>
-                ) : documents.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">Aun no hay documentos publicos</div>
-                ) : (
+                {loadingDiary ? (<div className="text-center py-8"><p className="text-gray-600">Cargando documentos...</p></div>) : documents.length === 0 ? (<div className="text-center py-8 text-gray-500">Aun no hay documentos publicos</div>) : (
                   <div className="space-y-3">
                     {documents.map((doc: any) => (
                       <div key={doc.id} className="bg-white rounded-lg shadow p-4 flex justify-between items-center">
@@ -776,9 +600,7 @@ export default function PetPublicProfile() {
       {showCamera && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4">
           <div className="bg-gray-900 rounded-xl shadow-2xl p-6 max-w-2xl w-full">
-            <div className="text-center mb-4">
-              <h3 className="text-2xl font-bold text-white mb-2">Tomar foto de {pet.petName}</h3>
-            </div>
+            <div className="text-center mb-4"><h3 className="text-2xl font-bold text-white mb-2">Tomar foto de {pet.petName}</h3></div>
             {cameraError ? (
               <div className="bg-red-900 border border-red-700 rounded-lg p-6 text-center">
                 <p className="text-red-300 mb-4">{cameraError}</p>
@@ -809,7 +631,6 @@ export default function PetPublicProfile() {
               <h3 className="text-2xl font-bold text-gray-800 mb-2">Contactar al dueno</h3>
               <p className="text-sm text-gray-600">Ayuda a que <strong>{pet.petName}</strong> regrese a casa</p>
             </div>
-
             {contactSent ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
                 <div className="text-5xl mb-2">OK</div>
@@ -834,12 +655,10 @@ export default function PetPublicProfile() {
                     </div>
                   )}
                 </div>
-
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Tu nombre *</label><input type="text" required value={contactData.name} onChange={(e) => setContactData({ ...contactData, name: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" placeholder="Ej: Juan Perez" /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Tu email *</label><input type="email" required value={contactData.email} onChange={(e) => setContactData({ ...contactData, email: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" placeholder="juan@email.com" /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Tu telefono</label><input type="tel" value={contactData.phone} onChange={(e) => setContactData({ ...contactData, phone: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" placeholder="300 123 4567" /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Donde encontraste a {pet.petName}? *</label><textarea required rows={3} value={contactData.message} onChange={(e) => setContactData({ ...contactData, message: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2" placeholder="Ej: La encontre en el parque..." /></div>
-
                 <div className="space-y-2 pt-4 border-t border-gray-200">
                   <button type="button" onClick={sendViaWhatsApp} className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold flex items-center justify-center gap-2">Enviar por WhatsApp</button>
                   <button type="button" onClick={sendViaEmail} className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center justify-center gap-2">Enviar por correo</button>
