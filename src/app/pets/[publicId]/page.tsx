@@ -30,11 +30,14 @@ export default function PetPublicProfile() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loadingDiary, setLoadingDiary] = useState(false);
 
-  //  Estado para el veterinario
+  // 🩺 Estado para el veterinario
   const [vet, setVet] = useState<any>(null);
 
   // ⚠️ Estado para las alergias
   const [allergies, setAllergies] = useState<any[]>([]);
+
+  // 💊 Estado para los medicamentos
+  const [medications, setMedications] = useState<any[]>([]);
 
   useEffect(() => {
     loadPet();
@@ -51,7 +54,7 @@ export default function PetPublicProfile() {
     }
   }, [activeTab, pet]);
 
-  // ✅ MODIFICADO: Ahora carga veterinario y alergias públicas
+  // ✅ MODIFICADO: Carga veterinario, alergias y medicamentos públicos
   async function loadPet() {
     try {
       const response = await fetch(`/api/pet-contact?petId=${publicId}`);
@@ -70,13 +73,22 @@ export default function PetPublicProfile() {
         console.error("Error al cargar veterinario:", err);
       }
 
-      // ⚠️ NUEVO: Cargar alergias públicas
+      // ️ Cargar alergias públicas
       try {
         const allergiesResponse = await fetch(`/api/pet-allergies?petId=${publicId}&public=true`);
         const allergiesData = await allergiesResponse.json();
         setAllergies(allergiesData.allergies || []);
       } catch (err) {
         console.error("Error al cargar alergias:", err);
+      }
+
+      // 💊 NUEVO: Cargar medicamentos públicos
+      try {
+        const medsResponse = await fetch(`/api/pet-medications?petId=${publicId}&public=true`);
+        const medsData = await medsResponse.json();
+        setMedications(medsData.medications || []);
+      } catch (err) {
+        console.error("Error al cargar medicamentos:", err);
       }
     } catch (err: any) {
       setError(err.message);
@@ -350,7 +362,7 @@ export default function PetPublicProfile() {
             {activeTab === "info" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  {/* ⚠️ ALERTA DE ALERGIAS - Se muestra solo si hay alergias públicas */}
+                  {/* ️ ALERTA DE ALERGIAS - Se muestra solo si hay alergias públicas */}
                   {allergies.length > 0 && (
                     <div className="mb-6 bg-red-50 border-2 border-red-400 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">
@@ -390,6 +402,56 @@ export default function PetPublicProfile() {
                     </div>
                   )}
 
+                  {/* 💊 MEDICACIÓN ACTUAL - Se muestra solo si hay medicamentos públicos */}
+                  {medications.length > 0 && (
+                    <div className="mb-6 bg-blue-50 border-2 border-blue-400 rounded-xl p-5">
+                      <h4 className="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">
+                        💊 Medicación actual
+                      </h4>
+                      <div className="space-y-3">
+                        {medications.map((med: any) => (
+                          <div key={med.id} className="bg-white border border-blue-200 rounded-lg p-3">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">
+                                💊 {med.medication_name}
+                              </span>
+                              {med.frequency && (
+                                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-semibold">
+                                  🕒 {med.frequency}
+                                </span>
+                              )}
+                            </div>
+                            <p className="font-bold text-blue-900 text-base">Dosis: {med.dosage}</p>
+                            {med.schedule && (
+                              <p className="text-sm text-gray-700 mt-1">
+                                <span className="font-semibold text-gray-600">Horario:</span> {med.schedule}
+                              </p>
+                            )}
+                            {med.reason && (
+                              <p className="text-sm text-gray-700 mt-1">
+                                <span className="font-semibold text-gray-600">Motivo:</span> {med.reason}
+                              </p>
+                            )}
+                            {med.prescribed_by && (
+                              <p className="text-sm text-gray-700 mt-1">
+                                <span className="font-semibold text-gray-600">Recetado por:</span> {med.prescribed_by}
+                              </p>
+                            )}
+                            {med.start_date && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Desde: {new Date(med.start_date).toLocaleDateString('es-CO')}
+                                {med.end_date && ` hasta ${new Date(med.end_date).toLocaleDateString('es-CO')}`}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-blue-600 mt-3 italic">
+                        💊 Información importante para el cuidado diario de {pet.petName}.
+                      </p>
+                    </div>
+                  )}
+
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Informacion</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between py-2 border-b border-gray-100"><span className="text-gray-600">Especie</span><span className="font-semibold text-gray-800">{speciesNames[pet.species] || pet.species}</span></div>
@@ -401,7 +463,7 @@ export default function PetPublicProfile() {
                     <div className="flex justify-between py-2"><span className="text-gray-600">Registrado</span><span className="font-semibold text-gray-800">{new Date(pet.createdAt).toLocaleDateString("es-CO")}</span></div>
                   </div>
 
-                  {/*  Sección del Veterinario - SOLO SE MUESTRA SI ES PÚBLICO */}
+                  {/* 🩺 Sección del Veterinario - SOLO SE MUESTRA SI ES PÚBLICO */}
                   {vet && (
                     <div className="mt-6 bg-orange-50 border-2 border-orange-200 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-orange-800 mb-3 flex items-center gap-2">
@@ -446,7 +508,7 @@ export default function PetPublicProfile() {
                         )}
                         {vet.notes && (
                           <div className="flex items-start gap-2 mt-3 pt-3 border-t border-orange-200">
-                            <span className="text-orange-600 font-semibold">📝</span>
+                            <span className="text-orange-600 font-semibold"></span>
                             <div>
                               <p className="text-xs text-gray-500">Notas</p>
                               <p className="text-gray-700 italic">{vet.notes}</p>
