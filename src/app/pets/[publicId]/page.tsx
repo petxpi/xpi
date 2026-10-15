@@ -39,6 +39,9 @@ export default function PetPublicProfile() {
   // 💊 Estado para los medicamentos
   const [medications, setMedications] = useState<any[]>([]);
 
+  //  Estado para el historial médico
+  const [medicalHistory, setMedicalHistory] = useState<any[]>([]);
+
   useEffect(() => {
     loadPet();
     return () => {
@@ -54,7 +57,6 @@ export default function PetPublicProfile() {
     }
   }, [activeTab, pet]);
 
-  // ✅ MODIFICADO: Carga veterinario, alergias y medicamentos públicos
   async function loadPet() {
     try {
       const response = await fetch(`/api/pet-contact?petId=${publicId}`);
@@ -62,7 +64,7 @@ export default function PetPublicProfile() {
       if (!response.ok) throw new Error(data.message || "Mascota no encontrada");
       setPet(data);
 
-      // 🩺 Cargar veterinario SOLO si es público
+      //  Cargar veterinario SOLO si es público
       try {
         const vetResponse = await fetch(`/api/veterinarians?petId=${publicId}&public=true`);
         const vetData = await vetResponse.json();
@@ -73,7 +75,7 @@ export default function PetPublicProfile() {
         console.error("Error al cargar veterinario:", err);
       }
 
-      // ️ Cargar alergias públicas
+      // ⚠️ Cargar alergias públicas
       try {
         const allergiesResponse = await fetch(`/api/pet-allergies?petId=${publicId}&public=true`);
         const allergiesData = await allergiesResponse.json();
@@ -82,13 +84,22 @@ export default function PetPublicProfile() {
         console.error("Error al cargar alergias:", err);
       }
 
-      // 💊 NUEVO: Cargar medicamentos públicos
+      // 💊 Cargar medicamentos públicos
       try {
         const medsResponse = await fetch(`/api/pet-medications?petId=${publicId}&public=true`);
         const medsData = await medsResponse.json();
         setMedications(medsData.medications || []);
       } catch (err) {
         console.error("Error al cargar medicamentos:", err);
+      }
+
+      // 🏥 NUEVO: Cargar historial médico público
+      try {
+        const historyResponse = await fetch(`/api/pet-medical-history?petId=${publicId}&public=true`);
+        const historyData = await historyResponse.json();
+        setMedicalHistory(historyData.history || []);
+      } catch (err) {
+        console.error("Error al cargar historial médico:", err);
       }
     } catch (err: any) {
       setError(err.message);
@@ -274,7 +285,6 @@ export default function PetPublicProfile() {
     other: "Otro",
   };
 
-  // ⚠️ Labels para alergias
   const allergyTypeLabels: Record<string, string> = {
     food: "🍖 Alimento",
     medication: "💊 Medicamento",
@@ -291,6 +301,15 @@ export default function PetPublicProfile() {
     mild: "Leve",
     moderate: "Moderada",
     severe: "Grave",
+  };
+
+  // 🏥 Labels para historial médico
+  const conditionTypeLabels: Record<string, string> = {
+    surgery: "🔪 Cirugía",
+    illness: "🤒 Enfermedad",
+    injury: "🤕 Lesión",
+    diagnosis: "🔬 Diagnóstico",
+    other: "📋 Otro",
   };
 
   if (loading) return <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center"><p className="text-purple-600 font-semibold">Cargando perfil...</p></div>;
@@ -362,7 +381,7 @@ export default function PetPublicProfile() {
             {activeTab === "info" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  {/* ️ ALERTA DE ALERGIAS - Se muestra solo si hay alergias públicas */}
+                  {/* ⚠️ ALERTA DE ALERGIAS */}
                   {allergies.length > 0 && (
                     <div className="mb-6 bg-red-50 border-2 border-red-400 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">
@@ -402,7 +421,7 @@ export default function PetPublicProfile() {
                     </div>
                   )}
 
-                  {/* 💊 MEDICACIÓN ACTUAL - Se muestra solo si hay medicamentos públicos */}
+                  {/* 💊 MEDICACIÓN ACTUAL */}
                   {medications.length > 0 && (
                     <div className="mb-6 bg-blue-50 border-2 border-blue-400 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">
@@ -452,6 +471,51 @@ export default function PetPublicProfile() {
                     </div>
                   )}
 
+                  {/* 🏥 HISTORIAL MÉDICO - NUEVO */}
+                  {medicalHistory.length > 0 && (
+                    <div className="mb-6 bg-purple-50 border-2 border-purple-400 rounded-xl p-5">
+                      <h4 className="text-lg font-bold text-purple-800 mb-3 flex items-center gap-2">
+                        🏥 Historial médico
+                      </h4>
+                      <div className="space-y-3">
+                        {medicalHistory.map((event: any) => (
+                          <div key={event.id} className="bg-white border border-purple-200 rounded-lg p-3">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-semibold">
+                                {conditionTypeLabels[event.condition_type] || event.condition_type}
+                              </span>
+                              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full font-semibold">
+                                📅 {new Date(event.date).toLocaleDateString('es-CO')}
+                              </span>
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${event.recovered === 1 ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                                {event.recovered === 1 ? "✅ Recuperado" : "⏳ En tratamiento"}
+                              </span>
+                            </div>
+                            <p className="font-bold text-purple-900 text-base"> {event.condition}</p>
+                            {event.description && (
+                              <p className="text-sm text-gray-700 mt-1">
+                                <span className="font-semibold text-gray-600">Descripción:</span> {event.description}
+                              </p>
+                            )}
+                            {event.treatment && (
+                              <p className="text-sm text-gray-700 mt-1">
+                                <span className="font-semibold text-gray-600">Tratamiento:</span> {event.treatment}
+                              </p>
+                            )}
+                            {event.vet_name && (
+                              <p className="text-sm text-gray-700 mt-1">
+                                <span className="font-semibold text-gray-600">Atendido por:</span> {event.vet_name}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-purple-600 mt-3 italic">
+                        🏥 Antecedentes médicos importantes de {pet.petName}.
+                      </p>
+                    </div>
+                  )}
+
                   <h3 className="text-lg font-bold text-gray-800 mb-4">Informacion</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between py-2 border-b border-gray-100"><span className="text-gray-600">Especie</span><span className="font-semibold text-gray-800">{speciesNames[pet.species] || pet.species}</span></div>
@@ -463,7 +527,7 @@ export default function PetPublicProfile() {
                     <div className="flex justify-between py-2"><span className="text-gray-600">Registrado</span><span className="font-semibold text-gray-800">{new Date(pet.createdAt).toLocaleDateString("es-CO")}</span></div>
                   </div>
 
-                  {/* 🩺 Sección del Veterinario - SOLO SE MUESTRA SI ES PÚBLICO */}
+                  {/*  VETERINARIO */}
                   {vet && (
                     <div className="mt-6 bg-orange-50 border-2 border-orange-200 rounded-xl p-5">
                       <h4 className="text-lg font-bold text-orange-800 mb-3 flex items-center gap-2">
@@ -479,7 +543,7 @@ export default function PetPublicProfile() {
                         </div>
                         {vet.clinic_name && (
                           <div className="flex items-start gap-2">
-                            <span className="text-orange-600 font-semibold">🏥</span>
+                            <span className="text-orange-600 font-semibold"></span>
                             <div>
                               <p className="text-xs text-gray-500">Clínica</p>
                               <p className="font-semibold text-gray-800">{vet.clinic_name}</p>
