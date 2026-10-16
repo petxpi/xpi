@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import Cropper from "react-easy-crop";
+import {
+  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  RadarChart, Radar, ScatterChart, Scatter, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -100,12 +105,19 @@ export default function DashboardPage() {
     isPublic: true,
   });
 
+  // 📊 ESTADOS PARA GRÁFICA DE PESO (NUEVO)
+  const [chartType, setChartType] = useState<"line" | "area" | "bar" | "radar" | "scatter">("line");
+  const [chartTheme, setChartTheme] = useState("xpipet");
+  const [showAnimations, setShowAnimations] = useState(true);
+  const [showValues, setShowValues] = useState(true);
+  const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
   const [alerts, setAlerts] = useState<any[]>([]);
   const [alertSummary, setAlertSummary] = useState({ total: 0, critical: 0, warning: 0, info: 0 });
   const [showAlertsPanel, setShowAlertsPanel] = useState(false);
   const [selectedPetForAlerts, setSelectedPetForAlerts] = useState<any>(null);
 
-  // 📧 NUEVOS ESTADOS PARA RECORDATORIOS POR EMAIL
   const [reminderEmail, setReminderEmail] = useState("");
   const [sendingReminder, setSendingReminder] = useState(false);
 
@@ -1015,10 +1027,10 @@ export default function DashboardPage() {
     loadAlerts(pet.id);
   }
 
-  function handleAlertAction(alert: any) {
+  function handleAlertAction(alertData: any) {
     setShowAlertsPanel(false);
     
-    switch (alert.type) {
+    switch (alertData.type) {
       case "vaccine":
         openVaccines(selectedPetForAlerts);
         break;
@@ -1035,11 +1047,10 @@ export default function DashboardPage() {
         openMedicalHistory(selectedPetForAlerts);
         break;
       default:
-        alert("Acción no disponible");
+        alert("Accion no disponible");
     }
   }
 
-    // 📧 FUNCIÓN: Enviar recordatorio por email
   async function handleSendReminder(alertData: any) {
     if (!reminderEmail.trim()) {
       alert("Por favor ingresa un email destinatario");
@@ -1069,6 +1080,7 @@ export default function DashboardPage() {
       setSendingReminder(false);
     }
   }
+
   function handleLogout() {
     document.cookie = "auth-token=; path=/; max-age=0";
     router.push("/login");
@@ -1142,6 +1154,48 @@ export default function DashboardPage() {
     if (diff > 0) return { text: `+${diff.toFixed(1)} kg`, color: "text-red-600" };
     if (diff < 0) return { text: `${diff.toFixed(1)} kg`, color: "text-green-600" };
     return { text: "0 kg", color: "text-gray-600" };
+  }
+
+  // 📊 TEMAS DE COLORES PARA LA GRÁFICA
+  const chartThemes: Record<string, { primary: string; secondary: string; gradient: [string, string]; bg: string }> = {
+    xpipet: { primary: "#9333ea", secondary: "#ec4899", gradient: ["#9333ea", "#ec4899"], bg: "#faf5ff" },
+    ocean: { primary: "#0ea5e9", secondary: "#06b6d4", gradient: ["#0ea5e9", "#06b6d4"], bg: "#f0f9ff" },
+    fire: { primary: "#ef4444", secondary: "#f97316", gradient: ["#ef4444", "#f97316"], bg: "#fef2f2" },
+    nature: { primary: "#22c55e", secondary: "#84cc16", gradient: ["#22c55e", "#84cc16"], bg: "#f0fdf4" },
+    rainbow: { primary: "#8b5cf6", secondary: "#ec4899", gradient: ["#8b5cf6", "#ec4899"], bg: "#faf5ff" },
+    neon: { primary: "#a855f7", secondary: "#06b6d4", gradient: ["#a855f7", "#06b6d4"], bg: "#f8fafc" },
+  };
+
+  // 📊 FUNCIÓN PARA EXPORTAR GRÁFICA COMO IMAGEN
+  async function exportChartAsImage() {
+    if (!chartContainerRef.current) return;
+    try {
+      const svgElement = chartContainerRef.current.querySelector("svg");
+      if (!svgElement) {
+        alert("No se pudo exportar la grafica");
+        return;
+      }
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const canvas = document.createElement("canvas");
+      canvas.width = 800;
+      canvas.height = 500;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const img = new Image();
+      img.onload = () => {
+        ctx.fillStyle = chartThemes[chartTheme].bg;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, 800, 500);
+        const pngFile = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        downloadLink.download = `peso-${selectedPetForWeight?.name || "mascota"}.png`;
+        downloadLink.href = pngFile;
+        downloadLink.click();
+      };
+      img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+    } catch (err) {
+      alert("Error al exportar: " + err);
+    }
   }
 
   return (
@@ -1239,7 +1293,7 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-center py-8">Cargando mascotas...</p>
         ) : pets.length === 0 ? (
           <div className="bg-white rounded-xl shadow p-12 text-center">
-            <p className="text-6xl mb-4"></p>
+            <p className="text-6xl mb-4">🐾</p>
             <p className="text-gray-600 mb-4">Aun no tienes mascotas registradas</p>
             <button onClick={() => setShowForm(true)} className="text-purple-600 font-semibold hover:underline">Agregar tu primera mascota</button>
           </div>
@@ -1539,7 +1593,7 @@ export default function DashboardPage() {
               <>
                 {vaccinations.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4">💉</div>
                     <p className="text-gray-600 mb-4">No hay registros de vacunas</p>
                     <button onClick={() => setShowAddVaccine(true)} className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 font-semibold">+ Agregar primera vacuna</button>
                   </div>
@@ -1697,7 +1751,7 @@ export default function DashboardPage() {
               <>
                 {allergies.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4">️</div>
                     <p className="text-gray-600 mb-4">No hay alergias registradas</p>
                     <p className="text-sm text-gray-500 mb-6">Registrar alergias ayuda a prevenir emergencias si tu mascota se pierde.</p>
                     <button onClick={() => setShowAddAllergy(true)} className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 font-semibold">+ Agregar primera alergia</button>
@@ -1820,7 +1874,7 @@ export default function DashboardPage() {
               <>
                 {medications.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4">💊</div>
                     <p className="text-gray-600 mb-4">No hay medicamentos registrados</p>
                     <p className="text-sm text-gray-500 mb-6">Registrar la medicacion actual ayuda en caso de emergencias o cuidados temporales.</p>
                     <button onClick={() => setShowAddMedication(true)} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold">+ Agregar primer medicamento</button>
@@ -1964,7 +2018,7 @@ export default function DashboardPage() {
               <>
                 {medicalHistory.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4">🏥</div>
                     <p className="text-gray-600 mb-4">No hay historial medico registrado</p>
                     <button onClick={() => setShowAddMedicalEvent(true)} className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-semibold">+ Agregar primer evento</button>
                   </div>
@@ -2097,7 +2151,7 @@ export default function DashboardPage() {
               <>
                 {dewormings.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4">🦠</div>
                     <p className="text-gray-600 mb-4">No hay desparasitaciones registradas</p>
                     <button onClick={() => setShowAddDeworming(true)} className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 font-semibold">+ Agregar primera desparasitacion</button>
                   </div>
@@ -2193,62 +2247,334 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* ⚖️ MODAL CONTROL DE PESO CON GRÁFICA */}
       {showWeight && selectedPetForWeight && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-5xl w-full max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-800">Control de Peso de {selectedPetForWeight.name}</h3>
+                <h3 className="text-2xl font-bold text-gray-800">⚖️ Control de Peso de {selectedPetForWeight.name}</h3>
                 <p className="text-sm text-gray-500">{weights.length} registro(s)</p>
               </div>
-              <button onClick={() => { setShowWeight(false); setShowAddWeight(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">X</button>
+              <button onClick={() => { setShowWeight(false); setShowAddWeight(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
+
             {!showAddWeight ? (
               <>
                 {weights.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4">⚖️</div>
                     <p className="text-gray-600 mb-4">No hay registros de peso</p>
                     <button onClick={() => setShowAddWeight(true)} className="bg-amber-500 text-white px-6 py-2 rounded-lg hover:bg-amber-600 font-semibold">+ Agregar primer peso</button>
                   </div>
                 ) : (
-                  <div className="space-y-3 mb-6">
-                    {weights.map((w: any, index: number) => {
-                      const prevWeight = weights[index + 1]?.weight;
-                      const trend = prevWeight ? getWeightTrend(w.weight, prevWeight) : null;
-                      return (
-                        <div key={w.id} className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-2 flex-wrap gap-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-semibold">
-                                  {new Date(w.date).toLocaleDateString('es-CO')}
-                                </span>
-                                {trend && (
-                                  <span className={`px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 ${trend.color}`}>
-                                    {trend.text}
-                                  </span>
-                                )}
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${w.public === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
-                                  {w.public === 1 ? "Publico" : "Privado"}
-                                </span>
-                              </div>
-                              <h4 className="font-bold text-amber-900 text-2xl">{w.weight} kg</h4>
-                              {w.notes && <p className="text-sm text-gray-600 mt-1">{w.notes}</p>}
-                            </div>
-                          </div>
-                          <div className="flex gap-2 mt-3 pt-3 border-t border-amber-100">
-                            <button onClick={() => handleToggleWeightPublic(w.id)} className={`px-3 py-1 rounded text-xs font-semibold ${w.public === 1 ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
-                              {w.public === 1 ? "Publico" : "Privado"}
-                            </button>
-                            <button onClick={() => handleDeleteWeight(w.id)} className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200">
-                              Eliminar
-                            </button>
+                  <>
+                    {/* 🎨 CONTROLES DE LA GRÁFICA */}
+                    <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4 mb-6">
+                      <h4 className="font-bold text-amber-900 mb-3">🎨 Personalizar gráfica</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">📊 Tipo de gráfica:</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { type: "line", label: "📈 Línea" },
+                              { type: "area", label: " Área" },
+                              { type: "bar", label: "📊 Columnas" },
+                              { type: "radar", label: " Radar" },
+                              { type: "scatter", label: "🔵 Dispersión" },
+                            ].map((opt) => (
+                              <button
+                                key={opt.type}
+                                onClick={() => setChartType(opt.type as any)}
+                                className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${
+                                  chartType === opt.type
+                                    ? "bg-amber-500 text-white shadow-md"
+                                    : "bg-white text-gray-700 hover:bg-amber-100"
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">🎨 Tema de colores:</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { theme: "xpipet", label: "🟣 XpiPet" },
+                              { theme: "ocean", label: "🌊 Océano" },
+                              { theme: "fire", label: "🔥 Fuego" },
+                              { theme: "nature", label: "🌿 Naturaleza" },
+                              { theme: "rainbow", label: "🌈 Arcoíris" },
+                              { theme: "neon", label: " Neón" },
+                            ].map((opt) => (
+                              <button
+                                key={opt.theme}
+                                onClick={() => setChartTheme(opt.theme)}
+                                className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${
+                                  chartTheme === opt.theme
+                                    ? "bg-amber-500 text-white shadow-md"
+                                    : "bg-white text-gray-700 hover:bg-amber-100"
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-4 mb-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={showAnimations}
+                            onChange={(e) => setShowAnimations(e.target.checked)}
+                            className="w-4 h-4 text-amber-500 rounded"
+                          />
+                          <span className="text-sm text-gray-700">✨ Animaciones</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={showValues}
+                            onChange={(e) => setShowValues(e.target.checked)}
+                            className="w-4 h-4 text-amber-500 rounded"
+                          />
+                          <span className="text-sm text-gray-700">🔢 Mostrar valores</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={viewMode === "chart"}
+                            onChange={(e) => setViewMode(e.target.checked ? "chart" : "table")}
+                            className="w-4 h-4 text-amber-500 rounded"
+                          />
+                          <span className="text-sm text-gray-700">📊 Ver gráfica</span>
+                        </label>
+                      </div>
+
+                      <button
+                        onClick={exportChartAsImage}
+                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 text-sm font-semibold flex items-center gap-2"
+                      >
+                        💾 Exportar como imagen PNG
+                      </button>
+                    </div>
+
+                    {/* 📊 GRÁFICA O TABLA */}
+                    {viewMode === "chart" ? (
+                      <div
+                        ref={chartContainerRef}
+                        className="bg-white border-2 border-amber-100 rounded-xl p-6 mb-6"
+                        style={{ backgroundColor: chartThemes[chartTheme].bg }}
+                      >
+                        <ResponsiveContainer width="100%" height={400}>
+                          {chartType === "line" ? (
+                            <LineChart data={weights.slice().reverse()}>
+                              <defs>
+                                <linearGradient id="colorWeight" x1="0" y1="0" x2="1" y2="0">
+                                  <stop offset="0%" stopColor={chartThemes[chartTheme].gradient[0]} />
+                                  <stop offset="100%" stopColor={chartThemes[chartTheme].gradient[1]} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                              <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "12px" }} />
+                              <YAxis stroke="#6b7280" style={{ fontSize: "12px" }} label={{ value: "kg", angle: -90, position: "insideLeft" }} />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: "white",
+                                  border: `2px solid ${chartThemes[chartTheme].primary}`,
+                                  borderRadius: "8px",
+                                  boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                                }}
+                              />
+                              <Legend />
+                              <Line
+                                type="monotone"
+                                dataKey="weight"
+                                name="Peso (kg)"
+                                stroke={`url(#colorWeight)`}
+                                strokeWidth={3}
+                                dot={{ r: 6, fill: chartThemes[chartTheme].primary, stroke: "white", strokeWidth: 2 }}
+                                activeDot={{ r: 8 }}
+                                isAnimationActive={showAnimations}
+                              />
+                            </LineChart>
+                          ) : chartType === "area" ? (
+                            <AreaChart data={weights.slice().reverse()}>
+                              <defs>
+                                <linearGradient id="colorArea" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={chartThemes[chartTheme].primary} stopOpacity={0.8} />
+                                  <stop offset="100%" stopColor={chartThemes[chartTheme].secondary} stopOpacity={0.2} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                              <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "12px" }} />
+                              <YAxis stroke="#6b7280" style={{ fontSize: "12px" }} label={{ value: "kg", angle: -90, position: "insideLeft" }} />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: "white",
+                                  border: `2px solid ${chartThemes[chartTheme].primary}`,
+                                  borderRadius: "8px",
+                                }}
+                              />
+                              <Legend />
+                              <Area
+                                type="monotone"
+                                dataKey="weight"
+                                name="Peso (kg)"
+                                stroke={chartThemes[chartTheme].primary}
+                                strokeWidth={3}
+                                fill="url(#colorArea)"
+                                isAnimationActive={showAnimations}
+                              />
+                            </AreaChart>
+                          ) : chartType === "bar" ? (
+                            <BarChart data={weights.slice().reverse()}>
+                              <defs>
+                                <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={chartThemes[chartTheme].primary} />
+                                  <stop offset="100%" stopColor={chartThemes[chartTheme].secondary} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                              <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "12px" }} />
+                              <YAxis stroke="#6b7280" style={{ fontSize: "12px" }} label={{ value: "kg", angle: -90, position: "insideLeft" }} />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: "white",
+                                  border: `2px solid ${chartThemes[chartTheme].primary}`,
+                                  borderRadius: "8px",
+                                }}
+                              />
+                              <Legend />
+                              <Bar
+                                dataKey="weight"
+                                name="Peso (kg)"
+                                fill="url(#colorBar)"
+                                radius={[8, 8, 0, 0]}
+                                isAnimationActive={showAnimations}
+                              />
+                            </BarChart>
+                          ) : chartType === "radar" ? (
+                            <RadarChart data={weights.slice().reverse().map(w => ({ ...w, date: w.date.slice(5) }))}>
+                              <PolarGrid stroke="#e5e7eb" />
+                              <PolarAngleAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "11px" }} />
+                              <PolarRadiusAxis stroke="#6b7280" style={{ fontSize: "11px" }} />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: "white",
+                                  border: `2px solid ${chartThemes[chartTheme].primary}`,
+                                  borderRadius: "8px",
+                                }}
+                              />
+                              <Legend />
+                              <Radar
+                                name="Peso (kg)"
+                                dataKey="weight"
+                                stroke={chartThemes[chartTheme].primary}
+                                fill={chartThemes[chartTheme].primary}
+                                fillOpacity={0.4}
+                                isAnimationActive={showAnimations}
+                              />
+                            </RadarChart>
+                          ) : (
+                            <ScatterChart>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                              <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "12px" }} />
+                              <YAxis stroke="#6b7280" style={{ fontSize: "12px" }} label={{ value: "kg", angle: -90, position: "insideLeft" }} />
+                              <Tooltip
+                                contentStyle={{
+                                  backgroundColor: "white",
+                                  border: `2px solid ${chartThemes[chartTheme].primary}`,
+                                  borderRadius: "8px",
+                                }}
+                              />
+                              <Legend />
+                              <Scatter
+                                name="Peso (kg)"
+                                data={weights.slice().reverse()}
+                                fill={chartThemes[chartTheme].primary}
+                                isAnimationActive={showAnimations}
+                              />
+                            </ScatterChart>
+                          )}
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <div className="bg-white border-2 border-amber-100 rounded-xl overflow-hidden mb-6">
+                        <table className="w-full">
+                          <thead className="bg-amber-100">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900"> Fecha</th>
+                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">⚖️ Peso</th>
+                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">📈 Tendencia</th>
+                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">📝 Notas</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {weights.map((w: any, index: number) => {
+                              const prevWeight = weights[index + 1]?.weight;
+                              const trend = prevWeight ? getWeightTrend(w.weight, prevWeight) : null;
+                              return (
+                                <tr key={w.id} className="border-t border-amber-100 hover:bg-amber-50">
+                                  <td className="px-4 py-3 text-sm">{new Date(w.date).toLocaleDateString('es-CO')}</td>
+                                  <td className="px-4 py-3 text-sm font-bold text-amber-900">{w.weight} kg</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    {trend && <span className={`font-semibold ${trend.color}`}>{trend.text}</span>}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">{w.notes || "-"}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Lista de registros */}
+                    <div className="space-y-3 mb-6">
+                      <h4 className="font-bold text-gray-800"> Registros detallados:</h4>
+                      {weights.map((w: any, index: number) => {
+                        const prevWeight = weights[index + 1]?.weight;
+                        const trend = prevWeight ? getWeightTrend(w.weight, prevWeight) : null;
+                        return (
+                          <div key={w.id} className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-lg p-4">
+                            <div className="flex justify-between items-start mb-2 flex-wrap gap-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-semibold">
+                                    📅 {new Date(w.date).toLocaleDateString('es-CO')}
+                                  </span>
+                                  {trend && (
+                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 ${trend.color}`}>
+                                      {trend.text}
+                                    </span>
+                                  )}
+                                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${w.public === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
+                                    {w.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                                  </span>
+                                </div>
+                                <h4 className="font-bold text-amber-900 text-2xl">{w.weight} kg</h4>
+                                {w.notes && <p className="text-sm text-gray-600 mt-1">{w.notes}</p>}
+                              </div>
+                            </div>
+                            <div className="flex gap-2 mt-3 pt-3 border-t border-amber-100">
+                              <button onClick={() => handleToggleWeightPublic(w.id)} className={`px-3 py-1 rounded text-xs font-semibold ${w.public === 1 ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                                {w.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                              </button>
+                              <button onClick={() => handleDeleteWeight(w.id)} className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200">
+                                🗑️ Eliminar
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
                 <button onClick={() => setShowAddWeight(true)} className="w-full bg-amber-500 text-white py-3 rounded-lg hover:bg-amber-600 font-semibold flex items-center justify-center gap-2">+ Agregar nuevo registro</button>
               </>
@@ -2309,9 +2635,8 @@ export default function DashboardPage() {
               <button onClick={() => setShowAlertsPanel(false)} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
 
-            {/*  CAMPO PARA EMAIL DESTINATARIO */}
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <label className="block text-sm font-semibold text-blue-900 mb-2"> Email para enviar recordatorio:</label>
+              <label className="block text-sm font-semibold text-blue-900 mb-2">📧 Email para enviar recordatorio:</label>
               <div className="flex gap-2">
                 <input
                   type="email"
@@ -2349,7 +2674,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {alerts.map((alert: any) => {
+                {alerts.map((alertData: any) => {
                   const colors: Record<string, string> = {
                     critical: "bg-red-50 border-red-300 text-red-900",
                     warning: "bg-amber-50 border-amber-300 text-amber-900",
@@ -2361,26 +2686,26 @@ export default function DashboardPage() {
                     info: "bg-blue-200 text-blue-800",
                   };
                   return (
-                    <div key={alert.id} className={`border-2 rounded-lg p-4 ${colors[alert.severity] || "bg-gray-50 border-gray-300"}`}>
+                    <div key={alertData.id} className={`border-2 rounded-lg p-4 ${colors[alertData.severity] || "bg-gray-50 border-gray-300"}`}>
                       <div className="flex items-start gap-3">
-                        <div className="text-3xl">{alert.icon}</div>
+                        <div className="text-3xl">{alertData.icon}</div>
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
-                            <h4 className="font-bold text-base">{alert.title}</h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${badgeColors[alert.severity] || "bg-gray-200"}`}>
-                              {alert.severity}
+                            <h4 className="font-bold text-base">{alertData.title}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${badgeColors[alertData.severity] || "bg-gray-200"}`}>
+                              {alertData.severity}
                             </span>
                           </div>
-                          <p className="text-sm mt-1 opacity-90">{alert.message}</p>
+                          <p className="text-sm mt-1 opacity-90">{alertData.message}</p>
                           <div className="flex gap-3 mt-3">
                             <button 
-                              onClick={() => handleAlertAction(alert)} 
+                              onClick={() => handleAlertAction(alertData)} 
                               className="text-xs font-bold underline hover:no-underline cursor-pointer text-gray-700"
                             >
-                              {alert.action} →
+                              {alertData.action} →
                             </button>
                             <button 
-                              onClick={() => handleSendReminder(alert)}
+                              onClick={() => handleSendReminder(alertData)}
                               disabled={sendingReminder || !reminderEmail.trim()}
                               className="text-xs font-bold bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1"
                             >
@@ -2408,7 +2733,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full">
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4"></div>
+              <div className="text-6xl mb-4">🚨</div>
               <h3 className="text-2xl font-bold text-red-600 mb-2">Reportar Mascota Perdida</h3>
               <p className="text-sm text-gray-600">Estas a punto de reportar a <strong>{showLostModal.name}</strong> como perdido</p>
             </div>
