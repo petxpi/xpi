@@ -1039,8 +1039,8 @@ export default function DashboardPage() {
     }
   }
 
-  // 📧 NUEVA FUNCIÓN: Enviar recordatorio por email
-  async function handleSendReminder(alert: any) {
+    // 📧 FUNCIÓN: Enviar recordatorio por email
+  async function handleSendReminder(alertData: any) {
     if (!reminderEmail.trim()) {
       alert("Por favor ingresa un email destinatario");
       return;
@@ -1054,8 +1054,8 @@ export default function DashboardPage() {
         body: JSON.stringify({
           to: reminderEmail,
           petName: selectedPetForAlerts.name,
-          subject: alert.title,
-          message: alert.message,
+          subject: alertData.title,
+          message: alertData.message,
         }),
       });
 
@@ -1069,7 +1069,6 @@ export default function DashboardPage() {
       setSendingReminder(false);
     }
   }
-
   function handleLogout() {
     document.cookie = "auth-token=; path=/; max-age=0";
     router.push("/login");
