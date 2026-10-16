@@ -105,6 +105,10 @@ export default function DashboardPage() {
   const [showAlertsPanel, setShowAlertsPanel] = useState(false);
   const [selectedPetForAlerts, setSelectedPetForAlerts] = useState<any>(null);
 
+  // 📧 NUEVOS ESTADOS PARA RECORDATORIOS POR EMAIL
+  const [reminderEmail, setReminderEmail] = useState("");
+  const [sendingReminder, setSendingReminder] = useState(false);
+
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [locationHistory, setLocationHistory] = useState<any[]>([]);
   const [addressCache, setAddressCache] = useState<Record<string, string>>({});
@@ -1011,7 +1015,6 @@ export default function DashboardPage() {
     loadAlerts(pet.id);
   }
 
-  // 🚨 NUEVA FUNCIÓN: Manejar acciones de alertas
   function handleAlertAction(alert: any) {
     setShowAlertsPanel(false);
     
@@ -1033,6 +1036,37 @@ export default function DashboardPage() {
         break;
       default:
         alert("Acción no disponible");
+    }
+  }
+
+  // 📧 NUEVA FUNCIÓN: Enviar recordatorio por email
+  async function handleSendReminder(alert: any) {
+    if (!reminderEmail.trim()) {
+      alert("Por favor ingresa un email destinatario");
+      return;
+    }
+
+    setSendingReminder(true);
+    try {
+      const response = await fetch("/api/send-reminder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: reminderEmail,
+          petName: selectedPetForAlerts.name,
+          subject: alert.title,
+          message: alert.message,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Error al enviar");
+
+      alert("✅ Recordatorio enviado correctamente a " + reminderEmail);
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setSendingReminder(false);
     }
   }
 
@@ -2276,7 +2310,24 @@ export default function DashboardPage() {
               <button onClick={() => setShowAlertsPanel(false)} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            {/*  CAMPO PARA EMAIL DESTINATARIO */}
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <label className="block text-sm font-semibold text-blue-900 mb-2"> Email para enviar recordatorio:</label>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={reminderEmail}
+                  onChange={(e) => setReminderEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  className="flex-1 border border-blue-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <p className="text-xs text-blue-700 mt-2">
+                💡 <strong>Nota:</strong> En modo prueba, Resend solo envía al email registrado en tu cuenta de Resend.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mb-6 mt-4">
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold text-red-600">{alertSummary.critical}</p>
                 <p className="text-xs text-red-700 font-semibold">Críticas</p>
@@ -2322,12 +2373,21 @@ export default function DashboardPage() {
                             </span>
                           </div>
                           <p className="text-sm mt-1 opacity-90">{alert.message}</p>
-                          <button 
-                            onClick={() => handleAlertAction(alert)} 
-                            className="mt-3 text-xs font-bold underline hover:no-underline cursor-pointer"
-                          >
-                            {alert.action} →
-                          </button>
+                          <div className="flex gap-3 mt-3">
+                            <button 
+                              onClick={() => handleAlertAction(alert)} 
+                              className="text-xs font-bold underline hover:no-underline cursor-pointer text-gray-700"
+                            >
+                              {alert.action} →
+                            </button>
+                            <button 
+                              onClick={() => handleSendReminder(alert)}
+                              disabled={sendingReminder || !reminderEmail.trim()}
+                              className="text-xs font-bold bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1"
+                            >
+                              {sendingReminder ? "Enviando..." : " Enviar recordatorio"}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
