@@ -100,6 +100,11 @@ export default function DashboardPage() {
     isPublic: true,
   });
 
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alertSummary, setAlertSummary] = useState({ total: 0, critical: 0, warning: 0, info: 0 });
+  const [showAlertsPanel, setShowAlertsPanel] = useState(false);
+  const [selectedPetForAlerts, setSelectedPetForAlerts] = useState<any>(null);
+
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [locationHistory, setLocationHistory] = useState<any[]>([]);
   const [addressCache, setAddressCache] = useState<Record<string, string>>({});
@@ -987,6 +992,50 @@ export default function DashboardPage() {
     } catch (err: any) { alert(err.message); }
   }
 
+  async function loadAlerts(petId: string) {
+    try {
+      const response = await fetch(`/api/pet-alerts?petId=${petId}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Error al cargar alertas");
+      setAlerts(data.alerts || []);
+      setAlertSummary(data.summary || { total: 0, critical: 0, warning: 0, info: 0 });
+    } catch (err: any) {
+      console.error("Error:", err);
+      alert(err.message || "Error al cargar alertas");
+    }
+  }
+
+  function openAlertsPanel(pet: any) {
+    setSelectedPetForAlerts(pet);
+    setShowAlertsPanel(true);
+    loadAlerts(pet.id);
+  }
+
+  // 🚨 NUEVA FUNCIÓN: Manejar acciones de alertas
+  function handleAlertAction(alert: any) {
+    setShowAlertsPanel(false);
+    
+    switch (alert.type) {
+      case "vaccine":
+        openVaccines(selectedPetForAlerts);
+        break;
+      case "deworming":
+        openDeworming(selectedPetForAlerts);
+        break;
+      case "medication":
+        openMedications(selectedPetForAlerts);
+        break;
+      case "weight":
+        openWeight(selectedPetForAlerts);
+        break;
+      case "medical":
+        openMedicalHistory(selectedPetForAlerts);
+        break;
+      default:
+        alert("Acción no disponible");
+    }
+  }
+
   function handleLogout() {
     document.cookie = "auth-token=; path=/; max-age=0";
     router.push("/login");
@@ -1214,6 +1263,7 @@ export default function DashboardPage() {
                     <button onClick={() => openMedicalHistory(pet)} className="w-full bg-purple-600 text-white text-sm py-2 rounded hover:bg-purple-700 mb-2 flex items-center justify-center gap-2 font-semibold">Historial Medico</button>
                     <button onClick={() => openDeworming(pet)} className="w-full bg-emerald-600 text-white text-sm py-2 rounded hover:bg-emerald-700 mb-2 flex items-center justify-center gap-2 font-semibold">Desparasitaciones</button>
                     <button onClick={() => openWeight(pet)} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">Control de Peso</button>
+                    <button onClick={() => openAlertsPanel(pet)} className="w-full bg-slate-800 text-white text-sm py-2 rounded hover:bg-slate-900 mb-2 flex items-center justify-center gap-2 font-semibold">🚨 Centro de Alertas</button>
                     <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">Diario de Vida</a>
                     {isLost ? (
                       <button onClick={() => reportFound(pet.id)} className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 mb-2">Marcar como Encontrado</button>
@@ -2206,6 +2256,91 @@ export default function DashboardPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 🚨 MODAL CENTRO DE ALERTAS */}
+      {showAlertsPanel && selectedPetForAlerts && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  🚨 Centro de Alertas: {selectedPetForAlerts.name}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {alertSummary.total} alerta(s) detectada(s) por el sistema inteligente
+                </p>
+              </div>
+              <button onClick={() => setShowAlertsPanel(false)} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-red-600">{alertSummary.critical}</p>
+                <p className="text-xs text-red-700 font-semibold">Críticas</p>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-amber-600">{alertSummary.warning}</p>
+                <p className="text-xs text-amber-700 font-semibold">Advertencias</p>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-blue-600">{alertSummary.info}</p>
+                <p className="text-xs text-blue-700 font-semibold">Informativas</p>
+              </div>
+            </div>
+
+            {alerts.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">✅</div>
+                <p className="text-xl font-bold text-gray-800 mb-2">¡Todo en orden!</p>
+                <p className="text-gray-600">No hay alertas activas para {selectedPetForAlerts.name}. ¡Sigue así!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {alerts.map((alert: any) => {
+                  const colors: Record<string, string> = {
+                    critical: "bg-red-50 border-red-300 text-red-900",
+                    warning: "bg-amber-50 border-amber-300 text-amber-900",
+                    info: "bg-blue-50 border-blue-300 text-blue-900",
+                  };
+                  const badgeColors: Record<string, string> = {
+                    critical: "bg-red-200 text-red-800",
+                    warning: "bg-amber-200 text-amber-800",
+                    info: "bg-blue-200 text-blue-800",
+                  };
+                  return (
+                    <div key={alert.id} className={`border-2 rounded-lg p-4 ${colors[alert.severity] || "bg-gray-50 border-gray-300"}`}>
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl">{alert.icon}</div>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-bold text-base">{alert.title}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${badgeColors[alert.severity] || "bg-gray-200"}`}>
+                              {alert.severity}
+                            </span>
+                          </div>
+                          <p className="text-sm mt-1 opacity-90">{alert.message}</p>
+                          <button 
+                            onClick={() => handleAlertAction(alert)} 
+                            className="mt-3 text-xs font-bold underline hover:no-underline cursor-pointer"
+                          >
+                            {alert.action} →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="mt-6 pt-4 border-t border-gray-200 flex justify-end">
+              <button onClick={() => setShowAlertsPanel(false)} className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 font-semibold">
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
