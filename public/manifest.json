@@ -1,0 +1,27 @@
+{
+  "name": "XpiPet - Control de Mascotas",
+  "short_name": "XpiPet",
+  "description": "Aplicación inteligente para el cuidado y seguimiento de la salud de tu mascota",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#9333ea",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "health"],
+  "lang": "es",
+  "dir": "ltr"
+}

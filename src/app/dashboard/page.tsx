@@ -10,6 +10,7 @@ import {
   RadarChart, Radar, ScatterChart, Scatter, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
+import PWAInstallButton from "@/components/PWAInstallButton";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -105,7 +106,6 @@ export default function DashboardPage() {
     isPublic: true,
   });
 
-  // 📊 ESTADOS PARA GRÁFICA DE PESO (NUEVO)
   const [chartType, setChartType] = useState<"line" | "area" | "bar" | "radar" | "scatter">("line");
   const [chartTheme, setChartTheme] = useState("xpipet");
   const [showAnimations, setShowAnimations] = useState(true);
@@ -1156,7 +1156,6 @@ export default function DashboardPage() {
     return { text: "0 kg", color: "text-gray-600" };
   }
 
-  // 📊 TEMAS DE COLORES PARA LA GRÁFICA
   const chartThemes: Record<string, { primary: string; secondary: string; gradient: [string, string]; bg: string }> = {
     xpipet: { primary: "#9333ea", secondary: "#ec4899", gradient: ["#9333ea", "#ec4899"], bg: "#faf5ff" },
     ocean: { primary: "#0ea5e9", secondary: "#06b6d4", gradient: ["#0ea5e9", "#06b6d4"], bg: "#f0f9ff" },
@@ -1166,7 +1165,6 @@ export default function DashboardPage() {
     neon: { primary: "#a855f7", secondary: "#06b6d4", gradient: ["#a855f7", "#06b6d4"], bg: "#f8fafc" },
   };
 
-  // 📊 FUNCIÓN PARA EXPORTAR GRÁFICA COMO IMAGEN
   async function exportChartAsImage() {
     if (!chartContainerRef.current) return;
     try {
@@ -1293,7 +1291,7 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-center py-8">Cargando mascotas...</p>
         ) : pets.length === 0 ? (
           <div className="bg-white rounded-xl shadow p-12 text-center">
-            <p className="text-6xl mb-4">🐾</p>
+            <p className="text-6xl mb-4"></p>
             <p className="text-gray-600 mb-4">Aun no tienes mascotas registradas</p>
             <button onClick={() => setShowForm(true)} className="text-purple-600 font-semibold hover:underline">Agregar tu primera mascota</button>
           </div>
@@ -1350,7 +1348,7 @@ export default function DashboardPage() {
                     <button onClick={() => openMedicalHistory(pet)} className="w-full bg-purple-600 text-white text-sm py-2 rounded hover:bg-purple-700 mb-2 flex items-center justify-center gap-2 font-semibold">Historial Medico</button>
                     <button onClick={() => openDeworming(pet)} className="w-full bg-emerald-600 text-white text-sm py-2 rounded hover:bg-emerald-700 mb-2 flex items-center justify-center gap-2 font-semibold">Desparasitaciones</button>
                     <button onClick={() => openWeight(pet)} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">Control de Peso</button>
-                    <button onClick={() => openAlertsPanel(pet)} className="w-full bg-slate-800 text-white text-sm py-2 rounded hover:bg-slate-900 mb-2 flex items-center justify-center gap-2 font-semibold">🚨 Centro de Alertas</button>
+                    <button onClick={() => openAlertsPanel(pet)} className="w-full bg-slate-800 text-white text-sm py-2 rounded hover:bg-slate-900 mb-2 flex items-center justify-center gap-2 font-semibold"> Centro de Alertas</button>
                     <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">Diario de Vida</a>
                     {isLost ? (
                       <button onClick={() => reportFound(pet.id)} className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 mb-2">Marcar como Encontrado</button>
@@ -1751,7 +1749,7 @@ export default function DashboardPage() {
               <>
                 {allergies.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4">️</div>
+                    <div className="text-6xl mb-4">⚠️</div>
                     <p className="text-gray-600 mb-4">No hay alergias registradas</p>
                     <p className="text-sm text-gray-500 mb-6">Registrar alergias ayuda a prevenir emergencias si tu mascota se pierde.</p>
                     <button onClick={() => setShowAddAllergy(true)} className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 font-semibold">+ Agregar primera alergia</button>
@@ -2018,7 +2016,7 @@ export default function DashboardPage() {
               <>
                 {medicalHistory.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4">🏥</div>
+                    <div className="text-6xl mb-4"></div>
                     <p className="text-gray-600 mb-4">No hay historial medico registrado</p>
                     <button onClick={() => setShowAddMedicalEvent(true)} className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-semibold">+ Agregar primer evento</button>
                   </div>
@@ -2253,10 +2251,10 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-5xl w-full max-h-[95vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-800">⚖️ Control de Peso de {selectedPetForWeight.name}</h3>
+                <h3 className="text-2xl font-bold text-gray-800">️ Control de Peso de {selectedPetForWeight.name}</h3>
                 <p className="text-sm text-gray-500">{weights.length} registro(s)</p>
               </div>
-              <button onClick={() => { setShowWeight(false); setShowAddWeight(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
+              <button onClick={() => { setShowWeight(false); setShowAddWeight(false); }} className="text-gray-500 hover:text-gray-700 text-2xl"></button>
             </div>
 
             {!showAddWeight ? (
@@ -2269,19 +2267,18 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    {/* 🎨 CONTROLES DE LA GRÁFICA */}
                     <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4 mb-6">
-                      <h4 className="font-bold text-amber-900 mb-3">🎨 Personalizar gráfica</h4>
+                      <h4 className="font-bold text-amber-900 mb-3"> Personalizar gráfica</h4>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">📊 Tipo de gráfica:</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2"> Tipo de gráfica:</label>
                           <div className="grid grid-cols-3 gap-2">
                             {[
                               { type: "line", label: "📈 Línea" },
-                              { type: "area", label: " Área" },
+                              { type: "area", label: "🌊 Área" },
                               { type: "bar", label: "📊 Columnas" },
-                              { type: "radar", label: " Radar" },
+                              { type: "radar", label: "🎯 Radar" },
                               { type: "scatter", label: "🔵 Dispersión" },
                             ].map((opt) => (
                               <button
@@ -2308,7 +2305,7 @@ export default function DashboardPage() {
                               { theme: "fire", label: "🔥 Fuego" },
                               { theme: "nature", label: "🌿 Naturaleza" },
                               { theme: "rainbow", label: "🌈 Arcoíris" },
-                              { theme: "neon", label: " Neón" },
+                              { theme: "neon", label: "🌙 Neón" },
                             ].map((opt) => (
                               <button
                                 key={opt.theme}
@@ -2343,7 +2340,7 @@ export default function DashboardPage() {
                             onChange={(e) => setShowValues(e.target.checked)}
                             className="w-4 h-4 text-amber-500 rounded"
                           />
-                          <span className="text-sm text-gray-700">🔢 Mostrar valores</span>
+                          <span className="text-sm text-gray-700"> Mostrar valores</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -2364,7 +2361,6 @@ export default function DashboardPage() {
                       </button>
                     </div>
 
-                    {/* 📊 GRÁFICA O TABLA */}
                     {viewMode === "chart" ? (
                       <div
                         ref={chartContainerRef}
@@ -2509,9 +2505,9 @@ export default function DashboardPage() {
                         <table className="w-full">
                           <thead className="bg-amber-100">
                             <tr>
-                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900"> Fecha</th>
+                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">📅 Fecha</th>
                               <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">⚖️ Peso</th>
-                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">📈 Tendencia</th>
+                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900"> Tendencia</th>
                               <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">📝 Notas</th>
                             </tr>
                           </thead>
@@ -2535,9 +2531,8 @@ export default function DashboardPage() {
                       </div>
                     )}
 
-                    {/* Lista de registros */}
                     <div className="space-y-3 mb-6">
-                      <h4 className="font-bold text-gray-800"> Registros detallados:</h4>
+                      <h4 className="font-bold text-gray-800">📋 Registros detallados:</h4>
                       {weights.map((w: any, index: number) => {
                         const prevWeight = weights[index + 1]?.weight;
                         const trend = prevWeight ? getWeightTrend(w.weight, prevWeight) : null;
@@ -2564,7 +2559,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="flex gap-2 mt-3 pt-3 border-t border-amber-100">
                               <button onClick={() => handleToggleWeightPublic(w.id)} className={`px-3 py-1 rounded text-xs font-semibold ${w.public === 1 ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
-                                {w.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                                {w.public === 1 ? "👁️ Público" : " Privado"}
                               </button>
                               <button onClick={() => handleDeleteWeight(w.id)} className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200">
                                 🗑️ Eliminar
@@ -2709,7 +2704,7 @@ export default function DashboardPage() {
                               disabled={sendingReminder || !reminderEmail.trim()}
                               className="text-xs font-bold bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1"
                             >
-                              {sendingReminder ? "Enviando..." : " Enviar recordatorio"}
+                              {sendingReminder ? "Enviando..." : "📧 Enviar recordatorio"}
                             </button>
                           </div>
                         </div>
@@ -2733,7 +2728,7 @@ export default function DashboardPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full">
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4">🚨</div>
+              <div className="text-6xl mb-4"></div>
               <h3 className="text-2xl font-bold text-red-600 mb-2">Reportar Mascota Perdida</h3>
               <p className="text-sm text-gray-600">Estas a punto de reportar a <strong>{showLostModal.name}</strong> como perdido</p>
             </div>
@@ -2751,6 +2746,8 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      <PWAInstallButton />
     </div>
   );
 }
