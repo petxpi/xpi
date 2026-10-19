@@ -11,6 +11,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
 import PWAInstallButton from "@/components/PWAInstallButton";
+import DashboardHorizontal from "@/components/DashboardHorizontal";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -25,102 +26,58 @@ export default function DashboardPage() {
   const [vaccinations, setVaccinations] = useState<any[]>([]);
   const [showAddVaccine, setShowAddVaccine] = useState(false);
   const [vaccineForm, setVaccineForm] = useState({
-    vaccine_name: "",
-    date_administered: "",
-    next_due: "",
-    lot_number: "",
-    vet_name: "",
+    vaccine_name: "", date_administered: "", next_due: "", lot_number: "", vet_name: "",
   });
-
   const [showVet, setShowVet] = useState(false);
   const [selectedPetForVet, setSelectedPetForVet] = useState<any>(null);
   const [vetData, setVetData] = useState({ vetName: "", clinicName: "", phone: "", address: "", notes: "" });
   const [loadingVet, setLoadingVet] = useState(false);
   const [vetIsPublic, setVetIsPublic] = useState(true);
-
   const [showAllergies, setShowAllergies] = useState(false);
   const [selectedPetForAllergies, setSelectedPetForAllergies] = useState<any>(null);
   const [allergies, setAllergies] = useState<any[]>([]);
   const [showAddAllergy, setShowAddAllergy] = useState(false);
   const [allergyForm, setAllergyForm] = useState({
-    allergyType: "food",
-    allergen: "",
-    severity: "moderate",
-    symptoms: "",
-    treatment: "",
-    isPublic: true,
+    allergyType: "food", allergen: "", severity: "moderate", symptoms: "", treatment: "", isPublic: true,
   });
-
   const [showMedications, setShowMedications] = useState(false);
   const [selectedPetForMedications, setSelectedPetForMedications] = useState<any>(null);
   const [medications, setMedications] = useState<any[]>([]);
   const [showAddMedication, setShowAddMedication] = useState(false);
   const [medicationForm, setMedicationForm] = useState({
-    medicationName: "",
-    dosage: "",
-    frequency: "Diaria",
-    schedule: "",
-    reason: "",
-    prescribedBy: "",
-    startDate: "",
-    endDate: "",
-    isPublic: true,
+    medicationName: "", dosage: "", frequency: "Diaria", schedule: "", reason: "", prescribedBy: "", startDate: "", endDate: "", isPublic: true,
   });
-
   const [showMedicalHistory, setShowMedicalHistory] = useState(false);
   const [selectedPetForMedicalHistory, setSelectedPetForMedicalHistory] = useState<any>(null);
   const [medicalHistory, setMedicalHistory] = useState<any[]>([]);
   const [showAddMedicalEvent, setShowAddMedicalEvent] = useState(false);
   const [medicalHistoryForm, setMedicalHistoryForm] = useState({
-    condition: "",
-    conditionType: "illness",
-    date: "",
-    description: "",
-    treatment: "",
-    vetName: "",
-    cost: "",
-    recovered: true,
-    isPublic: true,
+    condition: "", conditionType: "illness", date: "", description: "", treatment: "", vetName: "", cost: "", recovered: true, isPublic: true,
   });
-
   const [showDeworming, setShowDeworming] = useState(false);
   const [selectedPetForDeworming, setSelectedPetForDeworming] = useState<any>(null);
   const [dewormings, setDewormings] = useState<any[]>([]);
   const [showAddDeworming, setShowAddDeworming] = useState(false);
   const [dewormingForm, setDewormingForm] = useState({
-    dewormingType: "internal",
-    productName: "",
-    dateApplied: "",
-    nextDate: "",
-    isPublic: true,
+    dewormingType: "internal", productName: "", dateApplied: "", nextDate: "", isPublic: true,
   });
-
   const [showWeight, setShowWeight] = useState(false);
   const [selectedPetForWeight, setSelectedPetForWeight] = useState<any>(null);
   const [weights, setWeights] = useState<any[]>([]);
   const [showAddWeight, setShowAddWeight] = useState(false);
-  const [weightForm, setWeightForm] = useState({
-    weight: "",
-    date: "",
-    notes: "",
-    isPublic: true,
-  });
-
+  const [weightForm, setWeightForm] = useState({ weight: "", date: "", notes: "", isPublic: true });
   const [chartType, setChartType] = useState<"line" | "area" | "bar" | "radar" | "scatter">("line");
   const [chartTheme, setChartTheme] = useState("xpipet");
   const [showAnimations, setShowAnimations] = useState(true);
   const [showValues, setShowValues] = useState(true);
   const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
   const chartContainerRef = useRef<HTMLDivElement>(null);
-
   const [alerts, setAlerts] = useState<any[]>([]);
   const [alertSummary, setAlertSummary] = useState({ total: 0, critical: 0, warning: 0, info: 0 });
   const [showAlertsPanel, setShowAlertsPanel] = useState(false);
   const [selectedPetForAlerts, setSelectedPetForAlerts] = useState<any>(null);
-
   const [reminderEmail, setReminderEmail] = useState("");
   const [sendingReminder, setSendingReminder] = useState(false);
-
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [locationHistory, setLocationHistory] = useState<any[]>([]);
   const [addressCache, setAddressCache] = useState<Record<string, string>>({});
@@ -131,15 +88,8 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    species: "",
-    breed: "",
-    color: "",
-    sex: "",
-    microchip: "",
-    photo: "",
+    name: "", species: "", breed: "", color: "", sex: "", microchip: "", photo: "",
   });
-
   const [showCropModal, setShowCropModal] = useState(false);
   const [cropImage, setCropImage] = useState<string>("");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -149,11 +99,8 @@ export default function DashboardPage() {
   const [cropPetId, setCropPetId] = useState<string>("");
 
   useEffect(() => { checkAuth(); }, []);
-
   useEffect(() => {
-    if (cropImage && !croppedAreaPixels) {
-      setCroppedAreaPixels({ x: 0, y: 0, width: 100, height: 100 });
-    }
+    if (cropImage && !croppedAreaPixels) setCroppedAreaPixels({ x: 0, y: 0, width: 100, height: 100 });
   }, [cropImage, croppedAreaPixels]);
 
   async function checkAuth() {
@@ -190,9 +137,7 @@ export default function DashboardPage() {
     canvas.width = pixelCrop.width;
     canvas.height = pixelCrop.height;
     ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => { if (blob) resolve(blob); }, "image/jpeg");
-    });
+    return new Promise((resolve) => { canvas.toBlob((blob) => { if (blob) resolve(blob); }, "image/jpeg"); });
   };
 
   const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
@@ -216,51 +161,30 @@ export default function DashboardPage() {
   }
 
   async function handleCropSave() {
-    if (!cropImage || !croppedAreaPixels) {
-      alert("Error: No se pudo procesar la imagen.");
-      return;
-    }
+    if (!cropImage || !croppedAreaPixels) { alert("Error: No se pudo procesar la imagen."); return; }
     try {
       setUploading(true);
       const croppedBlob = await getCroppedImg(cropImage, croppedAreaPixels);
       const formDataUpload = new FormData();
       formDataUpload.append("file", croppedBlob, "cropped-image.jpg");
-
       const res = await fetch("/api/upload", { method: "POST", body: formDataUpload });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-
       setFormData(prev => ({ ...prev, photo: data.url }));
-
       if (cropMode === "edit" && cropPetId) {
         const updateRes = await fetch(`/api/pets/${cropPetId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: formData.name || "Sin nombre",
-            species: formData.species || "dog",
-            breed: formData.breed || null,
-            color: formData.color || null,
-            sex: formData.sex || null,
-            microchip: formData.microchip || null,
-            photo: data.url,
-          }),
+          body: JSON.stringify({ name: formData.name || "Sin nombre", species: formData.species || "dog", breed: formData.breed || null, color: formData.color || null, sex: formData.sex || null, microchip: formData.microchip || null, photo: data.url }),
         });
-        if (!updateRes.ok) {
-          const updateData = await updateRes.json();
-          throw new Error(updateData.message || "Error al actualizar la foto");
-        }
+        if (!updateRes.ok) throw new Error("Error al actualizar la foto");
         await loadPets();
       }
-
       setShowCropModal(false);
       setCropImage("");
       setCroppedAreaPixels(null);
-    } catch (err: any) {
-      alert("Error al subir foto: " + err.message);
-    } finally {
-      setUploading(false);
-    }
+    } catch (err: any) { alert("Error al subir foto: " + err.message); }
+    finally { setUploading(false); }
   }
 
   async function handleCreatePet(e: React.FormEvent) {
@@ -339,15 +263,7 @@ export default function DashboardPage() {
 
   function openEditModal(pet: any) {
     setEditingPet(pet);
-    setFormData({
-      name: pet.name,
-      species: pet.species,
-      breed: pet.breed || "",
-      color: pet.color || "",
-      sex: pet.sex || "",
-      microchip: pet.microchip || "",
-      photo: pet.photo_url || "",
-    });
+    setFormData({ name: pet.name, species: pet.species, breed: pet.breed || "", color: pet.color || "", sex: pet.sex || "", microchip: pet.microchip || "", photo: pet.photo_url || "" });
   }
 
   function closeEditModal() {
@@ -430,10 +346,7 @@ export default function DashboardPage() {
     if (addressCache[key]) return addressCache[key];
     try {
       setLoadingAddresses(prev => ({ ...prev, [key]: true }));
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es&zoom=18&addressdetails=1`,
-        { headers: { 'User-Agent': 'XpiPet/1.0' } }
-      );
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es&zoom=18&addressdetails=1`, { headers: { 'User-Agent': 'XpiPet/1.0' } });
       if (!response.ok) return "Direccion no disponible";
       const data = await response.json();
       let address = "Direccion no disponible";
@@ -441,9 +354,7 @@ export default function DashboardPage() {
       if (addr.road) {
         address = addr.road;
         if (addr.house_number) address += ` #${addr.house_number}`;
-        if (addr.suburb || addr.neighbourhood || addr.residential) {
-          address += `, ${addr.suburb || addr.neighbourhood || addr.residential}`;
-        }
+        if (addr.suburb || addr.neighbourhood || addr.residential) address += `, ${addr.suburb || addr.neighbourhood || addr.residential}`;
       } else if (addr.suburb || addr.neighbourhood) {
         address = addr.suburb || addr.neighbourhood;
       } else if (data.display_name) {
@@ -453,10 +364,7 @@ export default function DashboardPage() {
       setAddressCache(prev => ({ ...prev, [key]: address }));
       setLoadingAddresses(prev => ({ ...prev, [key]: false }));
       return address;
-    } catch (err) {
-      console.error("Error al obtener direccion:", err);
-      return "Direccion no disponible";
-    }
+    } catch (err) { return "Direccion no disponible"; }
   }
 
   async function loadLocationHistory(pet: any) {
@@ -499,17 +407,12 @@ export default function DashboardPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Error al cargar vacunas");
       setVaccinations(data.vaccinations || []);
-    } catch (err: any) {
-      console.error("Error:", err);
-      alert(err.message || "Error al cargar vacunas");
-    }
+    } catch (err: any) { alert(err.message || "Error al cargar vacunas"); }
   }
 
   async function handleAddVaccine(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedPetForVaccines) { alert("Error: No hay mascota seleccionada"); return; }
-    const submitButton = e.currentTarget.querySelector('button[type="submit"]') as HTMLButtonElement;
-    if (submitButton) { submitButton.disabled = true; submitButton.textContent = "Guardando..."; }
     try {
       const response = await fetch(`/api/pets/${selectedPetForVaccines.id}/vaccinations`, {
         method: "POST",
@@ -522,12 +425,7 @@ export default function DashboardPage() {
       setShowAddVaccine(false);
       setVaccineForm({ vaccine_name: "", date_administered: "", next_due: "", lot_number: "", vet_name: "" });
       await loadVaccinations(selectedPetForVaccines.id);
-    } catch (err: any) {
-      console.error("Error:", err);
-      alert(err.message || "Error al registrar vacuna");
-    } finally {
-      if (submitButton) { submitButton.disabled = false; submitButton.textContent = "Guardar vacuna"; }
-    }
+    } catch (err: any) { alert(err.message || "Error al registrar vacuna"); }
   }
 
   async function handleDeleteVaccine(vaccinationId: string) {
@@ -549,20 +447,11 @@ export default function DashboardPage() {
       const response = await fetch(`/api/veterinarians?petId=${pet.id}`);
       const data = await response.json();
       if (data.vet) {
-        setVetData({
-          vetName: data.vet.vet_name || "",
-          clinicName: data.vet.clinic_name || "",
-          phone: data.vet.phone || "",
-          address: data.vet.address || "",
-          notes: data.vet.notes || "",
-        });
+        setVetData({ vetName: data.vet.vet_name || "", clinicName: data.vet.clinic_name || "", phone: data.vet.phone || "", address: data.vet.address || "", notes: data.vet.notes || "" });
         setVetIsPublic(data.vet.public === 1);
       }
-    } catch (err) {
-      console.error("Error al cargar veterinario:", err);
-    } finally {
-      setLoadingVet(false);
-    }
+    } catch (err) { console.error("Error al cargar veterinario:", err); }
+    finally { setLoadingVet(false); }
   }
 
   async function handleSaveVet(e: React.FormEvent) {
@@ -572,23 +461,13 @@ export default function DashboardPage() {
       const response = await fetch("/api/veterinarians", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          petId: selectedPetForVet.id,
-          vetName: vetData.vetName,
-          clinicName: vetData.clinicName,
-          phone: vetData.phone,
-          address: vetData.address,
-          notes: vetData.notes,
-          isPublic: vetIsPublic,
-        }),
+        body: JSON.stringify({ petId: selectedPetForVet.id, vetName: vetData.vetName, clinicName: vetData.clinicName, phone: vetData.phone, address: vetData.address, notes: vetData.notes, isPublic: vetIsPublic }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
       alert("Veterinario guardado correctamente");
       setShowVet(false);
-    } catch (err: any) {
-      alert("Error: " + err.message);
-    }
+    } catch (err: any) { alert("Error: " + err.message); }
   }
 
   async function handleDeleteVet() {
@@ -605,9 +484,7 @@ export default function DashboardPage() {
       setShowVet(false);
       setVetData({ vetName: "", clinicName: "", phone: "", address: "", notes: "" });
       setVetIsPublic(true);
-    } catch (err: any) {
-      alert("Error: " + err.message);
-    }
+    } catch (err: any) { alert("Error: " + err.message); }
   }
 
   async function openAllergies(pet: any) {
@@ -624,10 +501,7 @@ export default function DashboardPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Error al cargar alergias");
       setAllergies(data.allergies || []);
-    } catch (err: any) {
-      console.error("Error:", err);
-      alert(err.message || "Error al cargar alergias");
-    }
+    } catch (err: any) { alert(err.message || "Error al cargar alergias"); }
   }
 
   async function handleAddAllergy(e: React.FormEvent) {
@@ -638,15 +512,7 @@ export default function DashboardPage() {
       const response = await fetch("/api/pet-allergies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          petId: selectedPetForAllergies.id,
-          allergyType: allergyForm.allergyType,
-          allergen: allergyForm.allergen,
-          severity: allergyForm.severity,
-          symptoms: allergyForm.symptoms,
-          treatment: allergyForm.treatment,
-          isPublic: allergyForm.isPublic,
-        }),
+        body: JSON.stringify({ petId: selectedPetForAllergies.id, allergyType: allergyForm.allergyType, allergen: allergyForm.allergen, severity: allergyForm.severity, symptoms: allergyForm.symptoms, treatment: allergyForm.treatment, isPublic: allergyForm.isPublic }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Error al registrar alergia");
@@ -654,10 +520,7 @@ export default function DashboardPage() {
       setShowAddAllergy(false);
       setAllergyForm({ allergyType: "food", allergen: "", severity: "moderate", symptoms: "", treatment: "", isPublic: true });
       await loadAllergies(selectedPetForAllergies.id);
-    } catch (err: any) {
-      console.error("Error:", err);
-      alert(err.message || "Error al registrar alergia");
-    }
+    } catch (err: any) { alert(err.message || "Error al registrar alergia"); }
   }
 
   async function handleDeleteAllergy(allergyId: string) {
@@ -680,8 +543,7 @@ export default function DashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ allergyId, petId: selectedPetForAllergies.id }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+      if (!response.ok) throw new Error("Error al cambiar visibilidad");
       await loadAllergies(selectedPetForAllergies.id);
     } catch (err: any) { alert(err.message || "Error al cambiar visibilidad"); }
   }
@@ -700,49 +562,26 @@ export default function DashboardPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Error al cargar medicamentos");
       setMedications(data.medications || []);
-    } catch (err: any) {
-      console.error("Error:", err);
-      alert(err.message || "Error al cargar medicamentos");
-    }
+    } catch (err: any) { alert(err.message || "Error al cargar medicamentos"); }
   }
 
   async function handleAddMedication(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedPetForMedications) { alert("Error: No hay mascota seleccionada"); return; }
-    if (!medicationForm.medicationName.trim() || !medicationForm.dosage.trim()) { 
-      alert("Debes indicar el nombre del medicamento y la dosis"); 
-      return; 
-    }
+    if (!medicationForm.medicationName.trim() || !medicationForm.dosage.trim()) { alert("Debes indicar el nombre del medicamento y la dosis"); return; }
     try {
       const response = await fetch("/api/pet-medications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          petId: selectedPetForMedications.id,
-          medicationName: medicationForm.medicationName,
-          dosage: medicationForm.dosage,
-          frequency: medicationForm.frequency,
-          schedule: medicationForm.schedule,
-          reason: medicationForm.reason,
-          prescribedBy: medicationForm.prescribedBy,
-          startDate: medicationForm.startDate,
-          endDate: medicationForm.endDate,
-          isPublic: medicationForm.isPublic,
-        }),
+        body: JSON.stringify({ petId: selectedPetForMedications.id, medicationName: medicationForm.medicationName, dosage: medicationForm.dosage, frequency: medicationForm.frequency, schedule: medicationForm.schedule, reason: medicationForm.reason, prescribedBy: medicationForm.prescribedBy, startDate: medicationForm.startDate, endDate: medicationForm.endDate, isPublic: medicationForm.isPublic }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Error al registrar medicamento");
       alert("Medicamento registrado correctamente");
       setShowAddMedication(false);
-      setMedicationForm({
-        medicationName: "", dosage: "", frequency: "Diaria", schedule: "",
-        reason: "", prescribedBy: "", startDate: "", endDate: "", isPublic: true,
-      });
+      setMedicationForm({ medicationName: "", dosage: "", frequency: "Diaria", schedule: "", reason: "", prescribedBy: "", startDate: "", endDate: "", isPublic: true });
       await loadMedications(selectedPetForMedications.id);
-    } catch (err: any) {
-      console.error("Error:", err);
-      alert(err.message || "Error al registrar medicamento");
-    }
+    } catch (err: any) { alert(err.message || "Error al registrar medicamento"); }
   }
 
   async function handleDeleteMedication(medicationId: string) {
@@ -765,8 +604,7 @@ export default function DashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ medicationId, petId: selectedPetForMedications.id }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+      if (!response.ok) throw new Error("Error al cambiar visibilidad");
       await loadMedications(selectedPetForMedications.id);
     } catch (err: any) { alert(err.message || "Error al cambiar visibilidad"); }
   }
@@ -785,48 +623,26 @@ export default function DashboardPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Error al cargar historial");
       setMedicalHistory(data.history || []);
-    } catch (err: any) {
-      console.error("Error:", err);
-      alert(err.message || "Error al cargar historial");
-    }
+    } catch (err: any) { alert(err.message || "Error al cargar historial"); }
   }
 
   async function handleAddMedicalEvent(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedPetForMedicalHistory) return;
-    if (!medicalHistoryForm.condition.trim() || !medicalHistoryForm.date) { 
-      alert("Debes indicar la condicion y la fecha"); 
-      return; 
-    }
+    if (!medicalHistoryForm.condition.trim() || !medicalHistoryForm.date) { alert("Debes indicar la condicion y la fecha"); return; }
     try {
       const response = await fetch("/api/pet-medical-history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          petId: selectedPetForMedicalHistory.id,
-          condition: medicalHistoryForm.condition,
-          conditionType: medicalHistoryForm.conditionType,
-          date: medicalHistoryForm.date,
-          description: medicalHistoryForm.description,
-          treatment: medicalHistoryForm.treatment,
-          vetName: medicalHistoryForm.vetName,
-          cost: medicalHistoryForm.cost,
-          recovered: medicalHistoryForm.recovered,
-          isPublic: medicalHistoryForm.isPublic,
-        }),
+        body: JSON.stringify({ petId: selectedPetForMedicalHistory.id, condition: medicalHistoryForm.condition, conditionType: medicalHistoryForm.conditionType, date: medicalHistoryForm.date, description: medicalHistoryForm.description, treatment: medicalHistoryForm.treatment, vetName: medicalHistoryForm.vetName, cost: medicalHistoryForm.cost, recovered: medicalHistoryForm.recovered, isPublic: medicalHistoryForm.isPublic }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
       alert("Evento medico registrado correctamente");
       setShowAddMedicalEvent(false);
-      setMedicalHistoryForm({
-        condition: "", conditionType: "illness", date: "", description: "",
-        treatment: "", vetName: "", cost: "", recovered: true, isPublic: true,
-      });
+      setMedicalHistoryForm({ condition: "", conditionType: "illness", date: "", description: "", treatment: "", vetName: "", cost: "", recovered: true, isPublic: true });
       await loadMedicalHistory(selectedPetForMedicalHistory.id);
-    } catch (err: any) {
-      alert(err.message || "Error al registrar evento");
-    }
+    } catch (err: any) { alert(err.message || "Error al registrar evento"); }
   }
 
   async function handleDeleteMedicalEvent(historyId: string) {
@@ -868,44 +684,26 @@ export default function DashboardPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Error al cargar desparasitaciones");
       setDewormings(data.dewormings || []);
-    } catch (err: any) {
-      console.error("Error:", err);
-      alert(err.message || "Error al cargar desparasitaciones");
-    }
+    } catch (err: any) { alert(err.message || "Error al cargar desparasitaciones"); }
   }
 
   async function handleAddDeworming(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedPetForDeworming) return;
-    if (!dewormingForm.productName.trim() || !dewormingForm.dateApplied) { 
-      alert("Debes indicar el producto y la fecha de aplicacion"); 
-      return; 
-    }
+    if (!dewormingForm.productName.trim() || !dewormingForm.dateApplied) { alert("Debes indicar el producto y la fecha de aplicacion"); return; }
     try {
       const response = await fetch("/api/pet-deworming", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          petId: selectedPetForDeworming.id,
-          dewormingType: dewormingForm.dewormingType,
-          productName: dewormingForm.productName,
-          dateApplied: dewormingForm.dateApplied,
-          nextDate: dewormingForm.nextDate,
-          isPublic: dewormingForm.isPublic,
-        }),
+        body: JSON.stringify({ petId: selectedPetForDeworming.id, dewormingType: dewormingForm.dewormingType, productName: dewormingForm.productName, dateApplied: dewormingForm.dateApplied, nextDate: dewormingForm.nextDate, isPublic: dewormingForm.isPublic }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
       alert("Desparasitacion registrada correctamente");
       setShowAddDeworming(false);
-      setDewormingForm({
-        dewormingType: "internal", productName: "", dateApplied: "",
-        nextDate: "", isPublic: true,
-      });
+      setDewormingForm({ dewormingType: "internal", productName: "", dateApplied: "", nextDate: "", isPublic: true });
       await loadDewormings(selectedPetForDeworming.id);
-    } catch (err: any) {
-      alert(err.message || "Error al registrar desparasitacion");
-    }
+    } catch (err: any) { alert(err.message || "Error al registrar desparasitacion"); }
   }
 
   async function handleDeleteDeworming(dewormingId: string) {
@@ -947,30 +745,18 @@ export default function DashboardPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Error al cargar pesos");
       setWeights(data.weights || []);
-    } catch (err: any) {
-      console.error("Error:", err);
-      alert(err.message || "Error al cargar pesos");
-    }
+    } catch (err: any) { alert(err.message || "Error al cargar pesos"); }
   }
 
   async function handleAddWeight(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedPetForWeight) return;
-    if (!weightForm.weight || !weightForm.date) { 
-      alert("Debes indicar el peso y la fecha"); 
-      return; 
-    }
+    if (!weightForm.weight || !weightForm.date) { alert("Debes indicar el peso y la fecha"); return; }
     try {
       const response = await fetch("/api/pet-weights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          petId: selectedPetForWeight.id,
-          weight: parseFloat(weightForm.weight),
-          date: weightForm.date,
-          notes: weightForm.notes,
-          isPublic: weightForm.isPublic,
-        }),
+        body: JSON.stringify({ petId: selectedPetForWeight.id, weight: parseFloat(weightForm.weight), date: weightForm.date, notes: weightForm.notes, isPublic: weightForm.isPublic }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
@@ -978,9 +764,7 @@ export default function DashboardPage() {
       setShowAddWeight(false);
       setWeightForm({ weight: "", date: "", notes: "", isPublic: true });
       await loadWeights(selectedPetForWeight.id);
-    } catch (err: any) {
-      alert(err.message || "Error al registrar peso");
-    }
+    } catch (err: any) { alert(err.message || "Error al registrar peso"); }
   }
 
   async function handleDeleteWeight(weightId: string) {
@@ -1015,10 +799,7 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error(data.message || "Error al cargar alertas");
       setAlerts(data.alerts || []);
       setAlertSummary(data.summary || { total: 0, critical: 0, warning: 0, info: 0 });
-    } catch (err: any) {
-      console.error("Error:", err);
-      alert(err.message || "Error al cargar alertas");
-    }
+    } catch (err: any) { alert(err.message || "Error al cargar alertas"); }
   }
 
   function openAlertsPanel(pet: any) {
@@ -1029,56 +810,30 @@ export default function DashboardPage() {
 
   function handleAlertAction(alertData: any) {
     setShowAlertsPanel(false);
-    
     switch (alertData.type) {
-      case "vaccine":
-        openVaccines(selectedPetForAlerts);
-        break;
-      case "deworming":
-        openDeworming(selectedPetForAlerts);
-        break;
-      case "medication":
-        openMedications(selectedPetForAlerts);
-        break;
-      case "weight":
-        openWeight(selectedPetForAlerts);
-        break;
-      case "medical":
-        openMedicalHistory(selectedPetForAlerts);
-        break;
-      default:
-        alert("Accion no disponible");
+      case "vaccine": openVaccines(selectedPetForAlerts); break;
+      case "deworming": openDeworming(selectedPetForAlerts); break;
+      case "medication": openMedications(selectedPetForAlerts); break;
+      case "weight": openWeight(selectedPetForAlerts); break;
+      case "medical": openMedicalHistory(selectedPetForAlerts); break;
+      default: alert("Accion no disponible");
     }
   }
 
   async function handleSendReminder(alertData: any) {
-    if (!reminderEmail.trim()) {
-      alert("Por favor ingresa un email destinatario");
-      return;
-    }
-
+    if (!reminderEmail.trim()) { alert("Por favor ingresa un email destinatario"); return; }
     setSendingReminder(true);
     try {
       const response = await fetch("/api/send-reminder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: reminderEmail,
-          petName: selectedPetForAlerts.name,
-          subject: alertData.title,
-          message: alertData.message,
-        }),
+        body: JSON.stringify({ to: reminderEmail, petName: selectedPetForAlerts.name, subject: alertData.title, message: alertData.message }),
       });
-
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Error al enviar");
-
       alert("✅ Recordatorio enviado correctamente a " + reminderEmail);
-    } catch (err: any) {
-      alert("Error: " + err.message);
-    } finally {
-      setSendingReminder(false);
-    }
+    } catch (err: any) { alert("Error: " + err.message); }
+    finally { setSendingReminder(false); }
   }
 
   function handleLogout() {
@@ -1086,76 +841,48 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  const speciesEmoji: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Mascota" };
+  const speciesEmoji: Record<string, string> = { dog: "🐶", cat: "🐱", bird: "", rabbit: "🐰", other: "🐾" };
   const speciesNames: Record<string, string> = { dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo", other: "Otro" };
   const sexNames: Record<string, string> = { male: "Macho", female: "Hembra" };
   const statusConfig: Record<string, { color: string; text: string; emoji: string }> = {
     home: { color: "bg-green-100 text-green-700", text: "En casa", emoji: "" },
     lost: { color: "bg-red-100 text-red-700", text: "PERDIDO", emoji: "" },
   };
-
   function getSpeciesName(species: string): string { return speciesNames[species] || species; }
   function getSexName(sex: string): string { return sexNames[sex] || sex; }
-
   function getVaccineStatus(nextDue: string): { color: string; text: string; emoji: string } {
-    if (!nextDue) return { color: "bg-gray-100 text-gray-700", text: "Sin proxima dosis", emoji: "" };
+    if (!nextDue) return { color: "bg-gray-100 text-gray-700", text: "Sin proxima dosis", emoji: "⚪" };
     const nextDate = new Date(nextDue);
     const today = new Date();
     const diffDays = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} dias)`, emoji: "" };
-    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Proxima (${diffDays} dias)`, emoji: "" };
+    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} dias)`, emoji: "🔴" };
+    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Proxima (${diffDays} dias)`, emoji: "🟡" };
     return { color: "bg-green-100 text-green-700", text: `Al dia (${diffDays} dias)`, emoji: "" };
   }
-
-  const allergyTypeLabels: Record<string, string> = {
-    food: "Alimento",
-    medication: "Medicamento",
-    environmental: "Ambiental",
-  };
-
+  const allergyTypeLabels: Record<string, string> = { food: "Alimento", medication: "Medicamento", environmental: "Ambiental" };
   const severityConfig: Record<string, { color: string; emoji: string }> = {
-    mild: { color: "bg-yellow-100 text-yellow-800", emoji: "" },
-    moderate: { color: "bg-orange-100 text-orange-800", emoji: "" },
-    severe: { color: "bg-red-100 text-red-800", emoji: "" },
+    mild: { color: "bg-yellow-100 text-yellow-800", emoji: "🟡" },
+    moderate: { color: "bg-orange-100 text-orange-800", emoji: "🟠" },
+    severe: { color: "bg-red-100 text-red-800", emoji: "🔴" },
   };
-
-  const severityLabels: Record<string, string> = {
-    mild: "Leve",
-    moderate: "Moderada",
-    severe: "Grave",
-  };
-
-  const conditionTypeLabels: Record<string, string> = {
-    surgery: "Cirugia",
-    illness: "Enfermedad",
-    injury: "Lesion",
-    diagnosis: "Diagnostico",
-    other: "Otro",
-  };
-
-  const dewormingTypeLabels: Record<string, string> = {
-    internal: "Interna",
-    external: "Externa",
-    both: "Interna + Externa",
-  };
-
+  const severityLabels: Record<string, string> = { mild: "Leve", moderate: "Moderada", severe: "Grave" };
+  const conditionTypeLabels: Record<string, string> = { surgery: "Cirugia", illness: "Enfermedad", injury: "Lesion", diagnosis: "Diagnostico", other: "Otro" };
+  const dewormingTypeLabels: Record<string, string> = { internal: "Interna", external: "Externa", both: "Interna + Externa" };
   function getNextDewormingStatus(nextDate: string): { color: string; text: string; emoji: string } {
     if (!nextDate) return { color: "bg-gray-100 text-gray-700", text: "Sin proxima dosis", emoji: "" };
     const next = new Date(nextDate);
     const today = new Date();
     const diffDays = Math.ceil((next.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} dias)`, emoji: "" };
-    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Proxima (${diffDays} dias)`, emoji: "" };
-    return { color: "bg-green-100 text-green-700", text: `Al dia (${diffDays} dias)`, emoji: "" };
+    if (diffDays < 0) return { color: "bg-red-100 text-red-700", text: `Vencida (${Math.abs(diffDays)} dias)`, emoji: "🔴" };
+    if (diffDays <= 30) return { color: "bg-yellow-100 text-yellow-700", text: `Proxima (${diffDays} dias)`, emoji: "🟡" };
+    return { color: "bg-green-100 text-green-700", text: `Al dia (${diffDays} dias)`, emoji: "🟢" };
   }
-
   function getWeightTrend(current: number, previous: number): { text: string; color: string } {
     const diff = current - previous;
     if (diff > 0) return { text: `+${diff.toFixed(1)} kg`, color: "text-red-600" };
     if (diff < 0) return { text: `${diff.toFixed(1)} kg`, color: "text-green-600" };
     return { text: "0 kg", color: "text-gray-600" };
   }
-
   const chartThemes: Record<string, { primary: string; secondary: string; gradient: [string, string]; bg: string }> = {
     xpipet: { primary: "#9333ea", secondary: "#ec4899", gradient: ["#9333ea", "#ec4899"], bg: "#faf5ff" },
     ocean: { primary: "#0ea5e9", secondary: "#06b6d4", gradient: ["#0ea5e9", "#06b6d4"], bg: "#f0f9ff" },
@@ -1164,19 +891,14 @@ export default function DashboardPage() {
     rainbow: { primary: "#8b5cf6", secondary: "#ec4899", gradient: ["#8b5cf6", "#ec4899"], bg: "#faf5ff" },
     neon: { primary: "#a855f7", secondary: "#06b6d4", gradient: ["#a855f7", "#06b6d4"], bg: "#f8fafc" },
   };
-
   async function exportChartAsImage() {
     if (!chartContainerRef.current) return;
     try {
       const svgElement = chartContainerRef.current.querySelector("svg");
-      if (!svgElement) {
-        alert("No se pudo exportar la grafica");
-        return;
-      }
+      if (!svgElement) { alert("No se pudo exportar la grafica"); return; }
       const svgData = new XMLSerializer().serializeToString(svgElement);
       const canvas = document.createElement("canvas");
-      canvas.width = 800;
-      canvas.height = 500;
+      canvas.width = 800; canvas.height = 500;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       const img = new Image();
@@ -1191,14 +913,23 @@ export default function DashboardPage() {
         downloadLink.click();
       };
       img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-    } catch (err) {
-      alert("Error al exportar: " + err);
-    }
+    } catch (err) { alert("Error al exportar: " + err); }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+  <div className="min-h-screen relative">
+    {/* 🖼️ Imagen de fondo de toda la página */}
+    <div 
+  className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+  style={{ backgroundImage: "url('/mascota1.jpeg')" }}
+>
+  {/* Overlay muy sutil para mantener legibilidad pero ver colores reales */}
+  {/* <div className="absolute inset-0 bg-white bg-opacity-5" /> */}
+</div>
+
+    {/* Contenido del dashboard */}
+    <div className="relative z-10">
+      <header className="bg-white shadow-sm border-b sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-purple-600">XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
@@ -1212,7 +943,6 @@ export default function DashboardPage() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">{error}</div>}
-
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800">Mis Mascotas</h2>
           <button onClick={() => setShowForm(!showForm)} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
@@ -1291,80 +1021,70 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-center py-8">Cargando mascotas...</p>
         ) : pets.length === 0 ? (
           <div className="bg-white rounded-xl shadow p-12 text-center">
-            <p className="text-6xl mb-4"></p>
+            <p className="text-6xl mb-4">🐾</p>
             <p className="text-gray-600 mb-4">Aun no tienes mascotas registradas</p>
             <button onClick={() => setShowForm(true)} className="text-purple-600 font-semibold hover:underline">Agregar tu primera mascota</button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-8">
             {pets.map((pet: any) => {
               const statusInfo = statusConfig[pet.status] || statusConfig.home;
               const isLost = pet.status === "lost";
               return (
-                <div key={pet.id} className={`bg-white rounded-xl shadow p-6 ${isLost ? "border-2 border-red-500" : ""}`}>
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-800">{speciesEmoji[pet.species] || "Mascota"} {pet.name}</h3>
-                    <span className={`text-xs px-2 py-1 rounded font-semibold ${statusInfo.color}`}>{statusInfo.emoji} {statusInfo.text}</span>
-                  </div>
-                  
-                  <div className="mb-4 flex justify-center">
-                    {pet.photo_url ? (
-                      <div className="w-32 h-32 rounded-full border-4 border-purple-100 shadow-md overflow-hidden">
-                        <img src={pet.photo_url} alt={pet.name} className="w-full h-full object-cover" />
+                <div key={pet.id} className={`bg-white rounded-xl shadow-lg overflow-hidden ${isLost ? "border-2 border-red-500" : ""}`}>
+                  <div className="bg-gray-50 border-b border-gray-200 p-6">
+                    <div className="flex flex-col md:flex-row items-center gap-6">
+                      {pet.photo_url ? (
+                        <div className="w-24 h-24 rounded-full border-4 border-purple-100 shadow-md overflow-hidden flex-shrink-0">
+                          <img src={pet.photo_url} alt={pet.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center text-4xl border-4 border-gray-100 flex-shrink-0">
+                          {speciesEmoji[pet.species] || "🐾"}
+                        </div>
+                      )}
+                      <div className="flex-1 text-center md:text-left">
+                        <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
+                          <h2 className="text-2xl font-bold text-gray-800">{speciesEmoji[pet.species] || "🐾"} {pet.name}</h2>
+                          <span className={`text-xs px-3 py-1 rounded-full font-semibold inline-flex items-center justify-center w-fit mx-auto md:mx-0 ${statusInfo.color}`}>
+                            {statusInfo.emoji} {statusInfo.text}
+                          </span>
+                        </div>
+                        <p className="text-gray-600">Especie: {getSpeciesName(pet.species)} {pet.breed && `• Raza: ${pet.breed}`}</p>
+                        <p className="text-xs text-gray-500 mt-1">Codigo QR: <span className="font-mono font-bold text-purple-600">{pet.public_id}</span></p>
                       </div>
-                    ) : (
-                      <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-4xl border-4 border-gray-100">
-                        {speciesEmoji[pet.species] || "Mascota"}
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button onClick={() => openEditModal(pet)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-semibold">Editar</button>
+                        <button onClick={() => handleDeletePet(pet.id)} className="bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200 text-sm font-semibold">Eliminar</button>
+                      </div>
+                    </div>
+                    {isLost && pet.lost_report && (
+                      <div className="mt-4 bg-red-50 border border-red-200 text-red-700 p-3 rounded text-sm">
+                        <strong>🚨 Reporte de perdida:</strong> {pet.lost_report}
                       </div>
                     )}
                   </div>
 
-                  {isLost && pet.lost_report && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded mb-3 text-sm">
-                      <strong>Reporte:</strong> {pet.lost_report}
-                    </div>
-                  )}
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <p>Especie: {getSpeciesName(pet.species)}</p>
-                    {pet.breed && <p>Raza: {pet.breed}</p>}
-                    {pet.color && <p>Color: {pet.color}</p>}
-                    {pet.sex && <p>Sexo: {getSexName(pet.sex)}</p>}
-                  </div>
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-xs text-gray-500 mb-3">Codigo QR: <span className="font-mono font-bold text-purple-600">{pet.public_id}</span></p>
-                    <div className="flex gap-2 mb-2">
-                      <a href={`/pets/${pet.public_id}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-pink-600 text-white text-sm py-2 rounded hover:bg-pink-700 text-center">Ver Perfil</a>
-                      <button onClick={() => setSelectedPet(pet)} className="flex-1 bg-purple-600 text-white text-sm py-2 rounded hover:bg-purple-700">Ver QR</button>
-                      <button onClick={() => openEditModal(pet)} className="flex-1 bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700">Editar</button>
-                    </div>
-                    <div className="flex gap-2 mb-2">
-                      <button onClick={() => openMap(pet)} className="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700">Ver Ubicacion</button>
-                      <button onClick={() => loadLocationHistory(pet)} className="flex-1 bg-indigo-600 text-white text-sm py-2 rounded hover:bg-indigo-700">Ver Historial</button>
-                    </div>
-                    <button onClick={() => openVaccines(pet)} className="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-700 mb-2 flex items-center justify-center gap-2">Vacunas y Salud</button>
-                    <button onClick={() => openVet(pet)} className="w-full bg-orange-500 text-white text-sm py-2 rounded hover:bg-orange-600 mb-2 flex items-center justify-center gap-2 font-semibold">Veterinario</button>
-                    <button onClick={() => openAllergies(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2 flex items-center justify-center gap-2 font-semibold">Alergias</button>
-                    <button onClick={() => openMedications(pet)} className="w-full bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700 mb-2 flex items-center justify-center gap-2 font-semibold">Medicacion</button>
-                    <button onClick={() => openMedicalHistory(pet)} className="w-full bg-purple-600 text-white text-sm py-2 rounded hover:bg-purple-700 mb-2 flex items-center justify-center gap-2 font-semibold">Historial Medico</button>
-                    <button onClick={() => openDeworming(pet)} className="w-full bg-emerald-600 text-white text-sm py-2 rounded hover:bg-emerald-700 mb-2 flex items-center justify-center gap-2 font-semibold">Desparasitaciones</button>
-                    <button onClick={() => openWeight(pet)} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">Control de Peso</button>
-                    <button onClick={() => openAlertsPanel(pet)} className="w-full bg-slate-800 text-white text-sm py-2 rounded hover:bg-slate-900 mb-2 flex items-center justify-center gap-2 font-semibold"> Centro de Alertas</button>
-                    <a href={`/dashboard/pets/${pet.id}/diary`} className="w-full bg-amber-500 text-white text-sm py-2 rounded hover:bg-amber-600 mb-2 flex items-center justify-center gap-2 font-semibold">Diario de Vida</a>
-                    {isLost ? (
-                      <button onClick={() => reportFound(pet.id)} className="w-full bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 mb-2">Marcar como Encontrado</button>
-                    ) : (
-                      <button onClick={() => setShowLostModal(pet)} className="w-full bg-red-600 text-white text-sm py-2 rounded hover:bg-red-700 mb-2">Reportar Perdido</button>
-                    )}
-                    <button onClick={() => handleDeletePet(pet.id)} className="w-full bg-red-100 text-red-600 text-sm py-2 rounded hover:bg-red-200">Eliminar</button>
-                    <div className="mt-3 pt-3 border-t">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600">GPS:</span>
-                        <button onClick={() => toggleGPS(pet, pet.gps_enabled === 0)} className={`px-3 py-1 rounded text-xs font-semibold ${pet.gps_enabled === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-                          {pet.gps_enabled === 1 ? "Activado" : "Desactivado"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  {/* 🎯 AQUI VA EL DASHBOARD HORIZONTAL */}
+                  <DashboardHorizontal
+                    pet={pet}
+                    onVerPerfil={() => window.open(`/pets/${pet.public_id}`, '_blank')}
+                    onVerQR={() => setSelectedPet(pet)}
+                    onEditar={() => openEditModal(pet)}
+                    onVerUbicacion={() => openMap(pet)}
+                    onVerHistorial={() => loadLocationHistory(pet)}
+                    onVacunas={() => openVaccines(pet)}
+                    onVeterinario={() => openVet(pet)}
+                    onAlergias={() => openAllergies(pet)}
+                    onMedicacion={() => openMedications(pet)}
+                    onHistorialMedico={() => openMedicalHistory(pet)}
+                    onDesparasitaciones={() => openDeworming(pet)}
+                    onControlPeso={() => openWeight(pet)}
+                    onCentroAlertas={() => openAlertsPanel(pet)}
+                    onDiarioVida={() => router.push(`/dashboard/pets/${pet.id}/diary`)}
+                    onReportarPerdido={() => setShowLostModal(pet)}
+                    onEliminar={() => handleDeletePet(pet.id)}
+                  />
                 </div>
               );
             })}
@@ -1372,33 +1092,12 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {showCropModal && cropImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">Ajusta la foto</h3>
-            <p className="text-sm text-gray-600 mb-4 text-center">Mueve y haz zoom para seleccionar la parte que quieres mostrar</p>
-            <div className="relative w-full h-80 mb-6 bg-gray-100 rounded-lg overflow-hidden">
-              <Cropper image={cropImage} crop={crop} zoom={zoom} aspect={1} cropShape="round" onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} />
-            </div>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Zoom: {Math.round(zoom * 100)}%</label>
-              <input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
-            </div>
-            <div className="flex gap-3">
-              <button onClick={handleCropSave} disabled={uploading} className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 disabled:bg-gray-400">
-                {uploading ? "Subiendo..." : "Guardar seleccion"}
-              </button>
-              <button onClick={() => { setShowCropModal(false); setCropImage(""); setCroppedAreaPixels(null); }} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* MODAL QR */}
       {selectedPet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
             <div className="text-center">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">{speciesEmoji[selectedPet.species] || "Mascota"} {selectedPet.name}</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">{speciesEmoji[selectedPet.species] || "🐾"} {selectedPet.name}</h3>
               <p className="text-sm text-gray-500 mb-6">Codigo: <span className="font-mono font-bold text-purple-600">{selectedPet.public_id}</span></p>
               <div className="bg-white p-4 rounded-lg border-2 border-purple-200 inline-block mb-4">
                 <QRCodeSVG id={`qr-${selectedPet.public_id}`} value={`${typeof window !== 'undefined' ? window.location.origin : ''}/pets/${selectedPet.public_id}`} size={256} level="H" includeMargin={true} />
@@ -1413,6 +1112,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* MODAL EDITAR */}
       {editingPet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -1436,7 +1136,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="mb-3 flex items-center gap-4">
                     <div className="w-24 h-24 rounded-full border-4 border-gray-300 bg-gray-100 flex items-center justify-center text-3xl">
-                      {speciesEmoji[formData.species] || "Mascota"}
+                      {speciesEmoji[formData.species] || "🐾"}
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-700">Sin foto</p>
@@ -1496,6 +1196,30 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* MODAL CROP */}
+      {showCropModal && cropImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">Ajusta la foto</h3>
+            <p className="text-sm text-gray-600 mb-4 text-center">Mueve y haz zoom para seleccionar la parte que quieres mostrar</p>
+            <div className="relative w-full h-80 mb-6 bg-gray-100 rounded-lg overflow-hidden">
+              <Cropper image={cropImage} crop={crop} zoom={zoom} aspect={1} cropShape="round" onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={onCropComplete} />
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Zoom: {Math.round(zoom * 100)}%</label>
+              <input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={handleCropSave} disabled={uploading} className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 disabled:bg-gray-400">
+                {uploading ? "Subiendo..." : "Guardar seleccion"}
+              </button>
+              <button onClick={() => { setShowCropModal(false); setCropImage(""); setCroppedAreaPixels(null); }} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL MAPA */}
       {showMap && !showHistory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full">
@@ -1523,6 +1247,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* MODAL HISTORIAL */}
       {showHistory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -1577,6 +1302,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* MODAL VACUNAS */}
       {showVaccines && selectedPetForVaccines && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
@@ -1585,7 +1311,7 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-gray-800">Vacunas y Salud - {selectedPetForVaccines.name}</h3>
                 <p className="text-sm text-gray-500">{vaccinations.length} registro(s) de salud</p>
               </div>
-              <button onClick={() => { setShowVaccines(false); setShowAddVaccine(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">X</button>
+              <button onClick={() => { setShowVaccines(false); setShowAddVaccine(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
             {!showAddVaccine ? (
               <>
@@ -1669,6 +1395,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* MODAL VETERINARIO */}
       {showVet && selectedPetForVet && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-lg w-full max-h-[95vh] overflow-y-auto">
@@ -1677,7 +1404,7 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-gray-800">Veterinario de {selectedPetForVet.name}</h3>
                 <p className="text-sm text-gray-500">Datos del veterinario de cabecera</p>
               </div>
-              <button onClick={() => setShowVet(false)} className="text-gray-500 hover:text-gray-700 text-2xl">X</button>
+              <button onClick={() => setShowVet(false)} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
             {loadingVet ? (
               <div className="text-center py-8">
@@ -1735,6 +1462,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* MODAL ALERGIAS */}
       {showAllergies && selectedPetForAllergies && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
@@ -1743,7 +1471,7 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-gray-800">Alergias de {selectedPetForAllergies.name}</h3>
                 <p className="text-sm text-gray-500">{allergies.length} alergia(s) registrada(s)</p>
               </div>
-              <button onClick={() => { setShowAllergies(false); setShowAddAllergy(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">X</button>
+              <button onClick={() => { setShowAllergies(false); setShowAddAllergy(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
             {!showAddAllergy ? (
               <>
@@ -1751,7 +1479,6 @@ export default function DashboardPage() {
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">⚠️</div>
                     <p className="text-gray-600 mb-4">No hay alergias registradas</p>
-                    <p className="text-sm text-gray-500 mb-6">Registrar alergias ayuda a prevenir emergencias si tu mascota se pierde.</p>
                     <button onClick={() => setShowAddAllergy(true)} className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 font-semibold">+ Agregar primera alergia</button>
                   </div>
                 ) : (
@@ -1806,9 +1533,6 @@ export default function DashboardPage() {
             ) : (
               <form onSubmit={handleAddAllergy} className="space-y-4">
                 <h4 className="text-lg font-bold text-gray-800 mb-4">Registrar nueva alergia para {selectedPetForAllergies.name}</h4>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-800"><strong>Importante:</strong> Esta informacion puede salvar la vida de tu mascota en emergencias.</p>
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de alergia *</label>
                   <select required value={allergyForm.allergyType} onChange={(e) => setAllergyForm({ ...allergyForm, allergyType: e.target.value })} className="w-full border border-gray-300 rounded px-3 py-2 focus:border-red-600 focus:outline-none">
@@ -1858,6 +1582,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* MODAL MEDICAMENTOS */}
       {showMedications && selectedPetForMedications && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
@@ -1866,7 +1591,7 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-gray-800">Medicacion de {selectedPetForMedications.name}</h3>
                 <p className="text-sm text-gray-500">{medications.length} medicamento(s) registrado(s)</p>
               </div>
-              <button onClick={() => { setShowMedications(false); setShowAddMedication(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">X</button>
+              <button onClick={() => { setShowMedications(false); setShowAddMedication(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
             {!showAddMedication ? (
               <>
@@ -1874,7 +1599,6 @@ export default function DashboardPage() {
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">💊</div>
                     <p className="text-gray-600 mb-4">No hay medicamentos registrados</p>
-                    <p className="text-sm text-gray-500 mb-6">Registrar la medicacion actual ayuda en caso de emergencias o cuidados temporales.</p>
                     <button onClick={() => setShowAddMedication(true)} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-semibold">+ Agregar primer medicamento</button>
                   </div>
                 ) : (
@@ -1934,9 +1658,6 @@ export default function DashboardPage() {
             ) : (
               <form onSubmit={handleAddMedication} className="space-y-4">
                 <h4 className="text-lg font-bold text-gray-800 mb-4">Registrar nuevo medicamento para {selectedPetForMedications.name}</h4>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-800"><strong>Importante:</strong> Esta informacion es vital si alguien debe cuidar a tu mascota temporalmente.</p>
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del medicamento *</label>
@@ -2002,6 +1723,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* MODAL HISTORIAL MEDICO */}
       {showMedicalHistory && selectedPetForMedicalHistory && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
@@ -2010,13 +1732,13 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-gray-800">Historial Medico de {selectedPetForMedicalHistory.name}</h3>
                 <p className="text-sm text-gray-500">{medicalHistory.length} evento(s) registrado(s)</p>
               </div>
-              <button onClick={() => { setShowMedicalHistory(false); setShowAddMedicalEvent(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">X</button>
+              <button onClick={() => { setShowMedicalHistory(false); setShowAddMedicalEvent(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
             {!showAddMedicalEvent ? (
               <>
                 {medicalHistory.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4"></div>
+                    <div className="text-6xl mb-4">🏥</div>
                     <p className="text-gray-600 mb-4">No hay historial medico registrado</p>
                     <button onClick={() => setShowAddMedicalEvent(true)} className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-semibold">+ Agregar primer evento</button>
                   </div>
@@ -2135,6 +1857,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* MODAL DESPARASITACIONES */}
       {showDeworming && selectedPetForDeworming && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-4xl w-full max-h-[95vh] overflow-y-auto">
@@ -2143,7 +1866,7 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-gray-800">Desparasitaciones de {selectedPetForDeworming.name}</h3>
                 <p className="text-sm text-gray-500">{dewormings.length} registro(s)</p>
               </div>
-              <button onClick={() => { setShowDeworming(false); setShowAddDeworming(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">X</button>
+              <button onClick={() => { setShowDeworming(false); setShowAddDeworming(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
             {!showAddDeworming ? (
               <>
@@ -2197,11 +1920,6 @@ export default function DashboardPage() {
             ) : (
               <form onSubmit={handleAddDeworming} className="space-y-4">
                 <h4 className="text-lg font-bold text-gray-800 mb-4">Registrar desparasitacion para {selectedPetForDeworming.name}</h4>
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-                  <p className="text-sm text-emerald-800">
-                    <strong>Importante:</strong> Las desparasitaciones regulares son esenciales para la salud de tu mascota.
-                  </p>
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de desparasitacion *</label>
@@ -2245,7 +1963,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ⚖️ MODAL CONTROL DE PESO CON GRÁFICA */}
+      {/* MODAL PESO */}
       {showWeight && selectedPetForWeight && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-5xl w-full max-h-[95vh] overflow-y-auto">
@@ -2254,9 +1972,8 @@ export default function DashboardPage() {
                 <h3 className="text-2xl font-bold text-gray-800">️ Control de Peso de {selectedPetForWeight.name}</h3>
                 <p className="text-sm text-gray-500">{weights.length} registro(s)</p>
               </div>
-              <button onClick={() => { setShowWeight(false); setShowAddWeight(false); }} className="text-gray-500 hover:text-gray-700 text-2xl"></button>
+              <button onClick={() => { setShowWeight(false); setShowAddWeight(false); }} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
-
             {!showAddWeight ? (
               <>
                 {weights.length === 0 ? (
@@ -2268,105 +1985,62 @@ export default function DashboardPage() {
                 ) : (
                   <>
                     <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4 mb-6">
-                      <h4 className="font-bold text-amber-900 mb-3"> Personalizar gráfica</h4>
-                      
+                      <h4 className="font-bold text-amber-900 mb-3">⚙️ Personalizar gráfica</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2"> Tipo de gráfica:</label>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">📊 Tipo de gráfica:</label>
                           <div className="grid grid-cols-3 gap-2">
                             {[
                               { type: "line", label: "📈 Línea" },
-                              { type: "area", label: "🌊 Área" },
+                              { type: "area", label: " Área" },
                               { type: "bar", label: "📊 Columnas" },
-                              { type: "radar", label: "🎯 Radar" },
+                              { type: "radar", label: " Radar" },
                               { type: "scatter", label: "🔵 Dispersión" },
                             ].map((opt) => (
-                              <button
-                                key={opt.type}
-                                onClick={() => setChartType(opt.type as any)}
-                                className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${
-                                  chartType === opt.type
-                                    ? "bg-amber-500 text-white shadow-md"
-                                    : "bg-white text-gray-700 hover:bg-amber-100"
-                                }`}
-                              >
+                              <button key={opt.type} onClick={() => setChartType(opt.type as any)} className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${chartType === opt.type ? "bg-amber-500 text-white shadow-md" : "bg-white text-gray-700 hover:bg-amber-100"}`}>
                                 {opt.label}
                               </button>
                             ))}
                           </div>
                         </div>
-
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-2">🎨 Tema de colores:</label>
                           <div className="grid grid-cols-3 gap-2">
                             {[
                               { theme: "xpipet", label: "🟣 XpiPet" },
                               { theme: "ocean", label: "🌊 Océano" },
-                              { theme: "fire", label: "🔥 Fuego" },
+                              { theme: "fire", label: " Fuego" },
                               { theme: "nature", label: "🌿 Naturaleza" },
-                              { theme: "rainbow", label: "🌈 Arcoíris" },
+                              { theme: "rainbow", label: " Arcoíris" },
                               { theme: "neon", label: "🌙 Neón" },
                             ].map((opt) => (
-                              <button
-                                key={opt.theme}
-                                onClick={() => setChartTheme(opt.theme)}
-                                className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${
-                                  chartTheme === opt.theme
-                                    ? "bg-amber-500 text-white shadow-md"
-                                    : "bg-white text-gray-700 hover:bg-amber-100"
-                                }`}
-                              >
+                              <button key={opt.theme} onClick={() => setChartTheme(opt.theme)} className={`px-3 py-2 rounded-lg text-xs font-semibold transition ${chartTheme === opt.theme ? "bg-amber-500 text-white shadow-md" : "bg-white text-gray-700 hover:bg-amber-100"}`}>
                                 {opt.label}
                               </button>
                             ))}
                           </div>
                         </div>
                       </div>
-
                       <div className="flex flex-wrap gap-4 mb-3">
                         <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={showAnimations}
-                            onChange={(e) => setShowAnimations(e.target.checked)}
-                            className="w-4 h-4 text-amber-500 rounded"
-                          />
+                          <input type="checkbox" checked={showAnimations} onChange={(e) => setShowAnimations(e.target.checked)} className="w-4 h-4 text-amber-500 rounded" />
                           <span className="text-sm text-gray-700">✨ Animaciones</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={showValues}
-                            onChange={(e) => setShowValues(e.target.checked)}
-                            className="w-4 h-4 text-amber-500 rounded"
-                          />
+                          <input type="checkbox" checked={showValues} onChange={(e) => setShowValues(e.target.checked)} className="w-4 h-4 text-amber-500 rounded" />
                           <span className="text-sm text-gray-700"> Mostrar valores</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={viewMode === "chart"}
-                            onChange={(e) => setViewMode(e.target.checked ? "chart" : "table")}
-                            className="w-4 h-4 text-amber-500 rounded"
-                          />
+                          <input type="checkbox" checked={viewMode === "chart"} onChange={(e) => setViewMode(e.target.checked ? "chart" : "table")} className="w-4 h-4 text-amber-500 rounded" />
                           <span className="text-sm text-gray-700">📊 Ver gráfica</span>
                         </label>
                       </div>
-
-                      <button
-                        onClick={exportChartAsImage}
-                        className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 text-sm font-semibold flex items-center gap-2"
-                      >
+                      <button onClick={exportChartAsImage} className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 text-sm font-semibold flex items-center gap-2">
                         💾 Exportar como imagen PNG
                       </button>
                     </div>
-
                     {viewMode === "chart" ? (
-                      <div
-                        ref={chartContainerRef}
-                        className="bg-white border-2 border-amber-100 rounded-xl p-6 mb-6"
-                        style={{ backgroundColor: chartThemes[chartTheme].bg }}
-                      >
+                      <div ref={chartContainerRef} className="bg-white border-2 border-amber-100 rounded-xl p-6 mb-6" style={{ backgroundColor: chartThemes[chartTheme].bg }}>
                         <ResponsiveContainer width="100%" height={400}>
                           {chartType === "line" ? (
                             <LineChart data={weights.slice().reverse()}>
@@ -2379,25 +2053,9 @@ export default function DashboardPage() {
                               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                               <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "12px" }} />
                               <YAxis stroke="#6b7280" style={{ fontSize: "12px" }} label={{ value: "kg", angle: -90, position: "insideLeft" }} />
-                              <Tooltip
-                                contentStyle={{
-                                  backgroundColor: "white",
-                                  border: `2px solid ${chartThemes[chartTheme].primary}`,
-                                  borderRadius: "8px",
-                                  boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-                                }}
-                              />
+                              <Tooltip contentStyle={{ backgroundColor: "white", border: `2px solid ${chartThemes[chartTheme].primary}`, borderRadius: "8px", boxShadow: "0 4px 6px rgba(0,0,0,0.1)" }} />
                               <Legend />
-                              <Line
-                                type="monotone"
-                                dataKey="weight"
-                                name="Peso (kg)"
-                                stroke={`url(#colorWeight)`}
-                                strokeWidth={3}
-                                dot={{ r: 6, fill: chartThemes[chartTheme].primary, stroke: "white", strokeWidth: 2 }}
-                                activeDot={{ r: 8 }}
-                                isAnimationActive={showAnimations}
-                              />
+                              <Line type="monotone" dataKey="weight" name="Peso (kg)" stroke={`url(#colorWeight)`} strokeWidth={3} dot={{ r: 6, fill: chartThemes[chartTheme].primary, stroke: "white", strokeWidth: 2 }} activeDot={{ r: 8 }} isAnimationActive={showAnimations} />
                             </LineChart>
                           ) : chartType === "area" ? (
                             <AreaChart data={weights.slice().reverse()}>
@@ -2410,23 +2068,9 @@ export default function DashboardPage() {
                               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                               <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "12px" }} />
                               <YAxis stroke="#6b7280" style={{ fontSize: "12px" }} label={{ value: "kg", angle: -90, position: "insideLeft" }} />
-                              <Tooltip
-                                contentStyle={{
-                                  backgroundColor: "white",
-                                  border: `2px solid ${chartThemes[chartTheme].primary}`,
-                                  borderRadius: "8px",
-                                }}
-                              />
+                              <Tooltip contentStyle={{ backgroundColor: "white", border: `2px solid ${chartThemes[chartTheme].primary}`, borderRadius: "8px" }} />
                               <Legend />
-                              <Area
-                                type="monotone"
-                                dataKey="weight"
-                                name="Peso (kg)"
-                                stroke={chartThemes[chartTheme].primary}
-                                strokeWidth={3}
-                                fill="url(#colorArea)"
-                                isAnimationActive={showAnimations}
-                              />
+                              <Area type="monotone" dataKey="weight" name="Peso (kg)" stroke={chartThemes[chartTheme].primary} strokeWidth={3} fill="url(#colorArea)" isAnimationActive={showAnimations} />
                             </AreaChart>
                           ) : chartType === "bar" ? (
                             <BarChart data={weights.slice().reverse()}>
@@ -2439,63 +2083,27 @@ export default function DashboardPage() {
                               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                               <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "12px" }} />
                               <YAxis stroke="#6b7280" style={{ fontSize: "12px" }} label={{ value: "kg", angle: -90, position: "insideLeft" }} />
-                              <Tooltip
-                                contentStyle={{
-                                  backgroundColor: "white",
-                                  border: `2px solid ${chartThemes[chartTheme].primary}`,
-                                  borderRadius: "8px",
-                                }}
-                              />
+                              <Tooltip contentStyle={{ backgroundColor: "white", border: `2px solid ${chartThemes[chartTheme].primary}`, borderRadius: "8px" }} />
                               <Legend />
-                              <Bar
-                                dataKey="weight"
-                                name="Peso (kg)"
-                                fill="url(#colorBar)"
-                                radius={[8, 8, 0, 0]}
-                                isAnimationActive={showAnimations}
-                              />
+                              <Bar dataKey="weight" name="Peso (kg)" fill="url(#colorBar)" radius={[8, 8, 0, 0]} isAnimationActive={showAnimations} />
                             </BarChart>
                           ) : chartType === "radar" ? (
                             <RadarChart data={weights.slice().reverse().map(w => ({ ...w, date: w.date.slice(5) }))}>
                               <PolarGrid stroke="#e5e7eb" />
                               <PolarAngleAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "11px" }} />
                               <PolarRadiusAxis stroke="#6b7280" style={{ fontSize: "11px" }} />
-                              <Tooltip
-                                contentStyle={{
-                                  backgroundColor: "white",
-                                  border: `2px solid ${chartThemes[chartTheme].primary}`,
-                                  borderRadius: "8px",
-                                }}
-                              />
+                              <Tooltip contentStyle={{ backgroundColor: "white", border: `2px solid ${chartThemes[chartTheme].primary}`, borderRadius: "8px" }} />
                               <Legend />
-                              <Radar
-                                name="Peso (kg)"
-                                dataKey="weight"
-                                stroke={chartThemes[chartTheme].primary}
-                                fill={chartThemes[chartTheme].primary}
-                                fillOpacity={0.4}
-                                isAnimationActive={showAnimations}
-                              />
+                              <Radar name="Peso (kg)" dataKey="weight" stroke={chartThemes[chartTheme].primary} fill={chartThemes[chartTheme].primary} fillOpacity={0.4} isAnimationActive={showAnimations} />
                             </RadarChart>
                           ) : (
                             <ScatterChart>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                               <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: "12px" }} />
                               <YAxis stroke="#6b7280" style={{ fontSize: "12px" }} label={{ value: "kg", angle: -90, position: "insideLeft" }} />
-                              <Tooltip
-                                contentStyle={{
-                                  backgroundColor: "white",
-                                  border: `2px solid ${chartThemes[chartTheme].primary}`,
-                                  borderRadius: "8px",
-                                }}
-                              />
+                              <Tooltip contentStyle={{ backgroundColor: "white", border: `2px solid ${chartThemes[chartTheme].primary}`, borderRadius: "8px" }} />
                               <Legend />
-                              <Scatter
-                                name="Peso (kg)"
-                                data={weights.slice().reverse()}
-                                fill={chartThemes[chartTheme].primary}
-                                isAnimationActive={showAnimations}
-                              />
+                              <Scatter name="Peso (kg)" data={weights.slice().reverse()} fill={chartThemes[chartTheme].primary} isAnimationActive={showAnimations} />
                             </ScatterChart>
                           )}
                         </ResponsiveContainer>
@@ -2506,8 +2114,8 @@ export default function DashboardPage() {
                           <thead className="bg-amber-100">
                             <tr>
                               <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">📅 Fecha</th>
-                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">⚖️ Peso</th>
-                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900"> Tendencia</th>
+                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">️ Peso</th>
+                              <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">📈 Tendencia</th>
                               <th className="px-4 py-3 text-left text-sm font-bold text-amber-900">📝 Notas</th>
                             </tr>
                           </thead>
@@ -2519,9 +2127,7 @@ export default function DashboardPage() {
                                 <tr key={w.id} className="border-t border-amber-100 hover:bg-amber-50">
                                   <td className="px-4 py-3 text-sm">{new Date(w.date).toLocaleDateString('es-CO')}</td>
                                   <td className="px-4 py-3 text-sm font-bold text-amber-900">{w.weight} kg</td>
-                                  <td className="px-4 py-3 text-sm">
-                                    {trend && <span className={`font-semibold ${trend.color}`}>{trend.text}</span>}
-                                  </td>
+                                  <td className="px-4 py-3 text-sm">{trend && <span className={`font-semibold ${trend.color}`}>{trend.text}</span>}</td>
                                   <td className="px-4 py-3 text-sm text-gray-600">{w.notes || "-"}</td>
                                 </tr>
                               );
@@ -2530,7 +2136,6 @@ export default function DashboardPage() {
                         </table>
                       </div>
                     )}
-
                     <div className="space-y-3 mb-6">
                       <h4 className="font-bold text-gray-800">📋 Registros detallados:</h4>
                       {weights.map((w: any, index: number) => {
@@ -2541,16 +2146,10 @@ export default function DashboardPage() {
                             <div className="flex justify-between items-start mb-2 flex-wrap gap-2">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-semibold">
-                                    📅 {new Date(w.date).toLocaleDateString('es-CO')}
-                                  </span>
-                                  {trend && (
-                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 ${trend.color}`}>
-                                      {trend.text}
-                                    </span>
-                                  )}
+                                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-semibold">📅 {new Date(w.date).toLocaleDateString('es-CO')}</span>
+                                  {trend && (<span className={`px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 ${trend.color}`}>{trend.text}</span>)}
                                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${w.public === 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
-                                    {w.public === 1 ? "👁️ Público" : "🔒 Privado"}
+                                    {w.public === 1 ? "️ Público" : "🔒 Privado"}
                                   </span>
                                 </div>
                                 <h4 className="font-bold text-amber-900 text-2xl">{w.weight} kg</h4>
@@ -2561,9 +2160,7 @@ export default function DashboardPage() {
                               <button onClick={() => handleToggleWeightPublic(w.id)} className={`px-3 py-1 rounded text-xs font-semibold ${w.public === 1 ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
                                 {w.public === 1 ? "👁️ Público" : " Privado"}
                               </button>
-                              <button onClick={() => handleDeleteWeight(w.id)} className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200">
-                                🗑️ Eliminar
-                              </button>
+                              <button onClick={() => handleDeleteWeight(w.id)} className="px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200">🗑️ Eliminar</button>
                             </div>
                           </div>
                         );
@@ -2577,9 +2174,7 @@ export default function DashboardPage() {
               <form onSubmit={handleAddWeight} className="space-y-4">
                 <h4 className="text-lg font-bold text-gray-800 mb-4">Registrar peso para {selectedPetForWeight.name}</h4>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-sm text-amber-800">
-                    <strong>Importante:</strong> Registrar el peso regularmente ayuda a detectar problemas de salud a tiempo.
-                  </p>
+                  <p className="text-sm text-amber-800"><strong>Importante:</strong> Registrar el peso regularmente ayuda a detectar problemas de salud a tiempo.</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -2614,38 +2209,22 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 🚨 MODAL CENTRO DE ALERTAS */}
+      {/* MODAL ALERTAS */}
       {showAlertsPanel && selectedPetForAlerts && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 md:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  🚨 Centro de Alertas: {selectedPetForAlerts.name}
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {alertSummary.total} alerta(s) detectada(s) por el sistema inteligente
-                </p>
+                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">🚨 Centro de Alertas: {selectedPetForAlerts.name}</h3>
+                <p className="text-sm text-gray-500 mt-1">{alertSummary.total} alerta(s) detectada(s) por el sistema inteligente</p>
               </div>
               <button onClick={() => setShowAlertsPanel(false)} className="text-gray-500 hover:text-gray-700 text-2xl">✖</button>
             </div>
-
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
               <label className="block text-sm font-semibold text-blue-900 mb-2">📧 Email para enviar recordatorio:</label>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={reminderEmail}
-                  onChange={(e) => setReminderEmail(e.target.value)}
-                  placeholder="tu@email.com"
-                  className="flex-1 border border-blue-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <p className="text-xs text-blue-700 mt-2">
-                💡 <strong>Nota:</strong> En modo prueba, Resend solo envía al email registrado en tu cuenta de Resend.
-              </p>
+              <input type="email" value={reminderEmail} onChange={(e) => setReminderEmail(e.target.value)} placeholder="tu@email.com" className="w-full border border-blue-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
+              <p className="text-xs text-blue-700 mt-2">💡 <strong>Nota:</strong> En modo prueba, Resend solo envía al email registrado en tu cuenta de Resend.</p>
             </div>
-
             <div className="grid grid-cols-3 gap-3 mb-6 mt-4">
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold text-red-600">{alertSummary.critical}</p>
@@ -2660,7 +2239,6 @@ export default function DashboardPage() {
                 <p className="text-xs text-blue-700 font-semibold">Informativas</p>
               </div>
             </div>
-
             {alerts.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">✅</div>
@@ -2687,23 +2265,14 @@ export default function DashboardPage() {
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
                             <h4 className="font-bold text-base">{alertData.title}</h4>
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${badgeColors[alertData.severity] || "bg-gray-200"}`}>
-                              {alertData.severity}
-                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${badgeColors[alertData.severity] || "bg-gray-200"}`}>{alertData.severity}</span>
                           </div>
                           <p className="text-sm mt-1 opacity-90">{alertData.message}</p>
                           <div className="flex gap-3 mt-3">
-                            <button 
-                              onClick={() => handleAlertAction(alertData)} 
-                              className="text-xs font-bold underline hover:no-underline cursor-pointer text-gray-700"
-                            >
+                            <button onClick={() => handleAlertAction(alertData)} className="text-xs font-bold underline hover:no-underline cursor-pointer text-gray-700">
                               {alertData.action} →
                             </button>
-                            <button 
-                              onClick={() => handleSendReminder(alertData)}
-                              disabled={sendingReminder || !reminderEmail.trim()}
-                              className="text-xs font-bold bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1"
-                            >
+                            <button onClick={() => handleSendReminder(alertData)} disabled={sendingReminder || !reminderEmail.trim()} className="text-xs font-bold bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1">
                               {sendingReminder ? "Enviando..." : "📧 Enviar recordatorio"}
                             </button>
                           </div>
@@ -2714,21 +2283,19 @@ export default function DashboardPage() {
                 })}
               </div>
             )}
-
             <div className="mt-6 pt-4 border-t border-gray-200 flex justify-end">
-              <button onClick={() => setShowAlertsPanel(false)} className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 font-semibold">
-                Cerrar
-              </button>
+              <button onClick={() => setShowAlertsPanel(false)} className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 font-semibold">Cerrar</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* MODAL PERDIDO */}
       {showLostModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full">
             <div className="text-center mb-6">
-              <div className="text-6xl mb-4"></div>
+              <div className="text-6xl mb-4">🚨</div>
               <h3 className="text-2xl font-bold text-red-600 mb-2">Reportar Mascota Perdida</h3>
               <p className="text-sm text-gray-600">Estas a punto de reportar a <strong>{showLostModal.name}</strong> como perdido</p>
             </div>
@@ -2747,7 +2314,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <PWAInstallButton />
+        <PWAInstallButton />
+    </div>
     </div>
   );
 }
