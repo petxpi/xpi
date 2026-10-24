@@ -57,7 +57,7 @@ export default function Home() {
             Centro Clínico
           </a>
           <a
-            href="/administrador"
+            href="/administrador/tracking"
             className="block w-full px-8 py-3 rounded-full border-2 border-green-400 text-white font-semibold text-lg text-center hover:bg-green-400 hover:text-gray-900 transition-all shadow-lg"
           >
             Administrador

@@ -921,7 +921,7 @@ export default function DashboardPage() {
     {/* 🖼️ Imagen de fondo de toda la página */}
     <div 
   className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-  style={{ backgroundImage: "url('/mascota1.jpeg')" }}
+  style={{ backgroundImage: "url('/mascota1.jpg')" }}
 >
   {/* Overlay muy sutil para mantener legibilidad pero ver colores reales */}
   {/* <div className="absolute inset-0 bg-white bg-opacity-5" /> */}
@@ -934,7 +934,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-purple-600">XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
             <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium">Reportes</Link>
-            <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">Contacto Publico</Link>
+            <Link href="/administrador/tracking" className="text-sm text-red-600 hover:text-red-800 font-medium">Administrador</Link> <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">Contacto Publico</Link>
             <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">Mi Perfil</Link>
             <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesion</button>
           </div>

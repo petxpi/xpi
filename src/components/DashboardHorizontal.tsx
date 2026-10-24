@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface DashboardHorizontalProps {
   pet: any;
@@ -23,8 +24,8 @@ interface DashboardHorizontalProps {
 }
 
 const botones = [
-  { id: "perfil", label: "👁️ Ver Perfil", color: "bg-purple-200 hover:bg-purple-300 text-purple-900 border-purple-400" },
-  { id: "qr", label: "📱 Ver QR", color: "bg-cyan-200 hover:bg-cyan-300 text-cyan-900 border-cyan-400" },
+  { id: "perfil", label: "️ Ver Perfil", color: "bg-purple-200 hover:bg-purple-300 text-purple-900 border-purple-400" },
+  { id: "qr", label: " Ver QR", color: "bg-cyan-200 hover:bg-cyan-300 text-cyan-900 border-cyan-400" },
   { id: "editar", label: "✏️ Editar", color: "bg-blue-200 hover:bg-blue-300 text-blue-900 border-blue-400" },
   { id: "ubicacion", label: "📍 Ubicación", color: "bg-green-200 hover:bg-green-300 text-green-900 border-green-400" },
   { id: "historial", label: "📜 Historial", color: "bg-indigo-200 hover:bg-indigo-300 text-indigo-900 border-indigo-400" },
@@ -32,13 +33,14 @@ const botones = [
   { id: "veterinario", label: "🩺 Veterinario", color: "bg-orange-200 hover:bg-orange-300 text-orange-900 border-orange-400" },
   { id: "alergias", label: "⚠️ Alergias", color: "bg-red-200 hover:bg-red-300 text-red-900 border-red-400" },
   { id: "medicacion", label: "💊 Medicación", color: "bg-pink-200 hover:bg-pink-300 text-pink-900 border-pink-400" },
-  { id: "historialMedico", label: " Historial Médico", color: "bg-purple-200 hover:bg-purple-300 text-purple-900 border-purple-400" },
+  { id: "historialMedico", label: "🏥 Historial Médico", color: "bg-purple-200 hover:bg-purple-300 text-purple-900 border-purple-400" },
   { id: "desparasitaciones", label: "🦠 Desparasitaciones", color: "bg-emerald-200 hover:bg-emerald-300 text-emerald-900 border-emerald-400" },
   { id: "peso", label: "⚖️ Control de Peso", color: "bg-amber-200 hover:bg-amber-300 text-amber-900 border-amber-400" },
-  { id: "alertas", label: " Centro de Alertas", color: "bg-slate-200 hover:bg-slate-300 text-slate-900 border-slate-400" },
+  { id: "alertas", label: "🚨 Centro de Alertas", color: "bg-slate-200 hover:bg-slate-300 text-slate-900 border-slate-400" },
   { id: "diario", label: "📔 Diario de Vida", color: "bg-yellow-200 hover:bg-yellow-300 text-yellow-900 border-yellow-400" },
-  { id: "perdido", label: "🚨 Reportar Perdido", color: "bg-red-300 hover:bg-red-400 text-red-900 border-red-500" },
-  { id: "eliminar", label: "🗑️ Eliminar", color: "bg-gray-200 hover:bg-gray-300 text-gray-900 border-gray-400" },
+  { id: "rastreo", label: "🛰️ Rastreo en Vivo", color: "bg-violet-200 hover:bg-violet-300 text-violet-900 border-violet-400" },
+  { id: "perdido", label: " Reportar Perdido", color: "bg-red-300 hover:bg-red-400 text-red-900 border-red-500" },
+  { id: "eliminar", label: "️ Eliminar", color: "bg-gray-200 hover:bg-gray-300 text-gray-900 border-gray-400" },
 ];
 
 export default function DashboardHorizontal({
@@ -60,6 +62,7 @@ export default function DashboardHorizontal({
   onReportarPerdido,
   onEliminar,
 }: DashboardHorizontalProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("perfil");
   const [isOpen, setIsOpen] = useState(true);
   const [pressedButton, setPressedButton] = useState<string | null>(null);
@@ -85,6 +88,7 @@ export default function DashboardHorizontal({
       case "peso": onControlPeso(); break;
       case "alertas": onCentroAlertas(); break;
       case "diario": onDiarioVida(); break;
+      case "rastreo": router.push(`/dashboard/pets/${pet.id}/live-tracking`); break;
       case "perdido": onReportarPerdido(); break;
       case "eliminar": onEliminar(); break;
     }
@@ -94,10 +98,10 @@ export default function DashboardHorizontal({
 
   return (
     <div className="flex min-h-[500px] border-t border-purple-200">
-      {/*  Caja morada OSCURA - Menú lateral */}
+      {/* 🟣 Caja morada OSCURA - Menú lateral */}
       <div className={`bg-gradient-to-b from-purple-900 to-purple-950 transition-all duration-500 ease-in-out ${isOpen ? "w-64" : "w-16"} flex-shrink-0`}>
         
-        {/*  Botón COLLAPSE (cerrar) - AZUL */}
+        {/* 🔵 Botón COLLAPSE (cerrar) - AZUL */}
         {isOpen && (
           <button
             onClick={() => setIsOpen(false)}
@@ -108,7 +112,7 @@ export default function DashboardHorizontal({
           </button>
         )}
 
-        {/* 🟢 Botón EXPAND (abrir) - VERDE */}
+        {/*  Botón EXPAND (abrir) - VERDE */}
         {!isOpen && (
           <button
             onClick={() => setIsOpen(true)}
@@ -134,28 +138,23 @@ export default function DashboardHorizontal({
                 onMouseLeave={() => setHoveredButton(null)}
                 className={`w-full px-4 py-3 rounded-lg border-2 font-semibold text-sm text-left ${boton.color} ${isOpen ? "block" : "hidden"}`}
                 style={{
-                  // Efecto 3D de alto relieve
                   transform: isPressed 
                     ? "translateY(4px) rotateY(0deg)" 
                     : isHovered 
                     ? "translateY(-2px) rotateY(360deg)" 
                     : "translateY(0) rotateY(0deg)",
-                  // Sombra 3D (hundido al presionar)
                   boxShadow: isPressed 
                     ? "0 1px 0 rgba(0,0,0,0.3), inset 0 2px 4px rgba(0,0,0,0.2)" 
                     : isActive
                     ? "0 6px 0 rgba(0,0,0,0.2), 0 8px 10px rgba(0,0,0,0.15)"
                     : "0 4px 0 rgba(0,0,0,0.2), 0 6px 8px rgba(0,0,0,0.1)",
-                  // Borde inferior 3D
                   borderBottom: isPressed ? "2px solid transparent" : "4px solid rgba(0,0,0,0.15)",
-                  // ⏱️ Transición MÁS LENTA para la rotación (2 segundos)
                   transition: "all 2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                   transformStyle: "preserve-3d",
                   perspective: "1000px",
                 }}
               >
                 <span className="inline-block" style={{
-                  // ⏱️ Rotación del texto más lenta (2 segundos)
                   transform: isHovered ? "rotateY(360deg)" : "rotateY(0deg)",
                   transition: "transform 2s ease-in-out",
                 }}>
@@ -207,7 +206,7 @@ export default function DashboardHorizontal({
 
           {/* Especie y raza */}
           <p className="text-lg text-gray-200 mb-6 drop-shadow-md">
-            {pet.species === "dog" ? "🐶 Perro" : pet.species === "cat" ? "🐱 Gato" : "🐾 Mascota"} 
+            {pet.species === "dog" ? " Perro" : pet.species === "cat" ? "🐱 Gato" : "🐾 Mascota"} 
             {pet.breed && ` • ${pet.breed}`}
           </p>
 
