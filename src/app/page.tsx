@@ -45,7 +45,7 @@ export default function Home() {
 
         <div className="w-full space-y-4 mb-10">
           <a
-            href="/dashboard"
+            href="/register"
             className="block w-full px-8 py-3 rounded-full border-2 border-purple-400 text-white font-semibold text-lg text-center hover:bg-purple-400 hover:text-gray-900 transition-all shadow-lg"
           >
             Explorar
