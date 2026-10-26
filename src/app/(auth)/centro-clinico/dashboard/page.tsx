@@ -17,18 +17,18 @@ export default function CentroClinicoDashboard() {
 
   const menuItems = [
     { id: "dashboard", name: "Dashboard", icon: "📊", color: "purple", href: "/centro-clinico/dashboard" },
-    { id: "agenda", name: "Agenda", icon: "📅", color: "citric", href: "/centro-clinico/citas" },
-    { id: "pacientes", name: "Pacientes", icon: "", color: "purple", href: "/centro-clinico/pacientes" },
-    { id: "servicios", name: "Servicios", icon: "⚕️", color: "citric", href: "/centro-clinico/servicios" },
-    { id: "personal", name: "Personal", icon: "", color: "purple", href: "/centro-clinico/personal" },
-    { id: "reportes", name: "Reportes", icon: "📈", color: "citric", href: "/centro-clinico/reportes" },
+    { id: "agenda", name: "Agenda", icon: "📅", color: "green", href: "/centro-clinico/citas" },
+    { id: "pacientes", name: "Pacientes", icon: "🐾", color: "purple", href: "/centro-clinico/pacientes" },
+    { id: "servicios", name: "Servicios", icon: "⚕️", color: "green", href: "/centro-clinico/servicios" },
+    { id: "personal", name: "Personal", icon: "👥", color: "purple", href: "/centro-clinico/personal" },
+    { id: "reportes", name: "Reportes", icon: "", color: "green", href: "/centro-clinico/reportes" },
   ];
 
   const stats = [
-    { label: "Citas Hoy", value: "12", color: "purple", icon: "" },
-    { label: "Pacientes Activos", value: "148", color: "citric", icon: "" },
+    { label: "Citas Hoy", value: "12", color: "purple", icon: "📅" },
+    { label: "Pacientes Activos", value: "148", color: "green", icon: "🐾" },
     { label: "Servicios", value: "8", color: "purple", icon: "⚕️" },
-    { label: "Personal", value: "5", color: "citric", icon: "" },
+    { label: "Personal", value: "5", color: "green", icon: "👥" },
   ];
 
   const recentAppointments = [
@@ -39,7 +39,7 @@ export default function CentroClinicoDashboard() {
   ];
 
   const getColor = (color: string) => {
-    if (color === "citric") return { main: "#84cc16", light: "#ecfccb", text: "#4d7c0f" };
+    if (color === "green") return { main: "#10b981", light: "#d1fae5", text: "#065f46" };
     return { main: "#7c3aed", light: "#f3e8ff", text: "#6d28d9" };
   };
 
@@ -61,14 +61,14 @@ export default function CentroClinicoDashboard() {
             <div style={{
               width: "40px",
               height: "40px",
-              background: "linear-gradient(135deg, #7c3aed 0%, #84cc16 100%)",
+              background: "linear-gradient(135deg, #7c3aed 0%, #10b981 100%)",
               borderRadius: "10px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: "20px",
             }}>
-              
+              🏥
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "bold", color: "#1f2937" }}>
@@ -212,8 +212,8 @@ export default function CentroClinicoDashboard() {
                         borderRadius: "12px",
                         fontSize: "12px",
                         fontWeight: "600",
-                        background: apt.status === "Completada" ? "#ecfccb" : apt.status === "En curso" ? "#fef3c7" : "#e5e7eb",
-                        color: apt.status === "Completada" ? "#4d7c0f" : apt.status === "En curso" ? "#d97706" : "#6b7280",
+                        background: apt.status === "Completada" ? "#d1fae5" : apt.status === "En curso" ? "#fef3c7" : "#e5e7eb",
+                        color: apt.status === "Completada" ? "#065f46" : apt.status === "En curso" ? "#92400e" : "#6b7280",
                       }}>
                         {apt.status}
                       </span>
@@ -227,6 +227,23 @@ export default function CentroClinicoDashboard() {
 
         {/* Accesos rápidos */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+          <Link
+            href="/centro-clinico/crear"
+            style={{
+              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+              color: "white",
+              padding: "20px",
+              borderRadius: "12px",
+              textDecoration: "none",
+              textAlign: "center",
+              fontWeight: "600",
+              boxShadow: "0 4px 6px rgba(16, 185, 129, 0.3)",
+            }}
+          >
+            <div style={{ fontSize: "24px", marginBottom: "8px" }}>🏥</div>
+            Crear Nueva Clínica
+          </Link>
+          
           <Link
             href="/centro-clinico/servicios"
             style={{
@@ -247,14 +264,14 @@ export default function CentroClinicoDashboard() {
           <Link
             href="/centro-clinico/personal"
             style={{
-              background: "linear-gradient(135deg, #84cc16 0%, #65a30d 100%)",
+              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
               color: "white",
               padding: "20px",
               borderRadius: "12px",
               textDecoration: "none",
               textAlign: "center",
               fontWeight: "600",
-              boxShadow: "0 4px 6px rgba(132, 204, 22, 0.3)",
+              boxShadow: "0 4px 6px rgba(16, 185, 129, 0.3)",
             }}
           >
             <div style={{ fontSize: "24px", marginBottom: "8px" }}>👥</div>
@@ -274,7 +291,7 @@ export default function CentroClinicoDashboard() {
               boxShadow: "0 4px 6px rgba(124, 58, 237, 0.3)",
             }}
           >
-            <div style={{ fontSize: "24px", marginBottom: "8px" }}></div>
+            <div style={{ fontSize: "24px", marginBottom: "8px" }}>📅</div>
             Nueva Cita
           </Link>
         </div>
