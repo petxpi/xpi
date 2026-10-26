@@ -11,9 +11,12 @@ export default function CrearClinicaPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [message, setMessage] = useState("");
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [checkingSlug, setCheckingSlug] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
+    slug: "",
     ownerName: "",
     email: "",
     phone: "",
@@ -36,9 +39,29 @@ export default function CrearClinicaPage() {
         ownerName: data.ownerName || "",
         email: data.email || "",
         specialty: data.specialty || "",
+        slug: (data.clinicName || "").toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""),
       });
     }
   }, []);
+
+  // Validar slug en tiempo real
+  useEffect(() => {
+    if (!formData.slug || formData.slug.length < 3) {
+      setSlugAvailable(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCheckingSlug(true);
+      fetch(`/api/clinics/check-slug?slug=${formData.slug}`)
+        .then((res) => res.json())
+        .then((data) => setSlugAvailable(data.available))
+        .catch(() => setSlugAvailable(null))
+        .finally(() => setCheckingSlug(false));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.slug]);
 
   if (!mounted) return null;
 
@@ -83,6 +106,12 @@ export default function CrearClinicaPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    
+    if (!slugAvailable) {
+      setMessage("⚠️ Elige un slug válido y disponible");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -102,6 +131,8 @@ export default function CrearClinicaPage() {
             email: formData.email,
             status: "pending",
             logoUrl: formData.logoUrl,
+            slug: formData.slug,
+            storeUrl: `${window.location.origin}/tienda/${formData.slug}`,
           }));
           setMessage("✅ Clínica creada. Pendiente de aprobación del administrador.");
           setTimeout(() => router.push("/centro-clinico/pendiente"), 2000);
@@ -143,9 +174,9 @@ export default function CrearClinicaPage() {
 
         {message && (
           <div style={{
-            background: message.includes("✅") ? "#d1fae5" : "#fee2e2",
-            border: `1px solid ${message.includes("✅") ? "#10b981" : "#dc2626"}`,
-            color: message.includes("✅") ? "#065f46" : "#991b1b",
+            background: message.includes("✅") ? "#d1fae5" : message.includes("️") ? "#fef3c7" : "#fee2e2",
+            border: `1px solid ${message.includes("✅") ? "#10b981" : message.includes("️") ? "#f59e0b" : "#dc2626"}`,
+            color: message.includes("✅") ? "#065f46" : message.includes("⚠️") ? "#92400e" : "#991b1b",
             padding: "12px 16px",
             borderRadius: "8px",
             marginBottom: "20px",
@@ -216,6 +247,35 @@ export default function CrearClinicaPage() {
                 placeholder="Dr. Juan Pérez"
                 style={inputStyle}
               />
+            </div>
+          </div>
+
+          {/* SLUG */}
+          <div>
+            <label style={labelStyle}>URL de tu tienda (slug) *</label>
+            <input
+              type="text"
+              value={formData.slug}
+              onChange={(e) => 
+                setFormData({ 
+                  ...formData, 
+                  slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "")
+                })
+              }
+              required
+              placeholder="mi-clinica-veterinaria"
+              style={{
+                ...inputStyle,
+                borderColor: slugAvailable === true ? "#10b981" : slugAvailable === false ? "#dc2626" : "#d1d5db",
+              }}
+            />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+              <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
+                Tu tienda será: <strong>xpi-pet.vercel.app/tienda/{formData.slug || "tu-slug"}</strong>
+              </p>
+              {checkingSlug && <span style={{ fontSize: "12px", color: "#7c3aed" }}>Verificando...</span>}
+              {slugAvailable === true && <span style={{ fontSize: "12px", color: "#10b981", fontWeight: "600" }}>✅ Disponible</span>}
+              {slugAvailable === false && <span style={{ fontSize: "12px", color: "#dc2626", fontWeight: "600" }}>❌ No disponible</span>}
             </div>
           </div>
 
@@ -290,16 +350,16 @@ export default function CrearClinicaPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !slugAvailable}
             style={{
               padding: "14px 32px",
-              background: loading ? "#9ca3af" : "linear-gradient(135deg, #7c3aed 0%, #10b981 100%)",
+              background: (loading || !slugAvailable) ? "#9ca3af" : "linear-gradient(135deg, #7c3aed 0%, #10b981 100%)",
               color: "white",
               border: "none",
               borderRadius: "12px",
               fontWeight: "700",
               fontSize: "16px",
-              cursor: loading ? "not-allowed" : "pointer",
+              cursor: (loading || !slugAvailable) ? "not-allowed" : "pointer",
               boxShadow: "0 4px 6px rgba(124, 58, 237, 0.3)",
             }}
           >
