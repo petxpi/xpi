@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { 
       clinicId, name, ownerName, email, phone, 
-      address, city, country, logoUrl, specialty 
+      address, city, country, logoUrl, businessImageUrl, specialty 
     } = body;
 
     if (!clinicId || !name || !ownerName || !email) {
@@ -17,10 +17,10 @@ export async function POST(request: Request) {
       `UPDATE clinics 
        SET name = ?, owner_name = ?, email = ?, phone = ?, 
            address = ?, city = ?, country = ?, logo_url = ?, 
-           specialty = ?, status = 'pending',
+           business_image_url = ?, specialty = ?, status = 'pending',
            updated_at = datetime('now')
        WHERE id = ?`,
-      [name, ownerName, email, phone || '', address || '', city || '', country || 'Colombia', logoUrl || '', specialty || '', clinicId]
+      [name, ownerName, email, phone || '', address || '', city || '', country || 'Colombia', logoUrl || '', businessImageUrl || '', specialty || '', clinicId]
     );
 
     return NextResponse.json({ 

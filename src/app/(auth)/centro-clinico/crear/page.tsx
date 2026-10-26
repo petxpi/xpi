@@ -8,8 +8,9 @@ export default function CrearClinicaPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [message, setMessage] = useState("");
-  const [clinicId, setClinicId] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -21,6 +22,7 @@ export default function CrearClinicaPage() {
     country: "Colombia",
     specialty: "",
     logoUrl: "",
+    businessImageUrl: "",
   });
 
   useEffect(() => {
@@ -29,42 +31,77 @@ export default function CrearClinicaPage() {
     if (pendingData) {
       const data = JSON.parse(pendingData);
       setFormData({
+        ...formData,
         name: data.clinicName || "",
         ownerName: data.ownerName || "",
         email: data.email || "",
-        phone: "",
-        address: "",
-        city: "",
-        country: "Colombia",
         specialty: data.specialty || "",
-        logoUrl: "",
       });
     }
   }, []);
 
   if (!mounted) return null;
 
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>, field: "logoUrl" | "businessImageUrl") {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isLogo = field === "logoUrl";
+    if (isLogo) setUploadingLogo(true);
+    else setUploadingImage(true);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+
+      fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: base64,
+          folder: "xpipet/clinics",
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.url) {
+            setFormData({ ...formData, [field]: data.url });
+            setMessage(`✅ ${isLogo ? "Logo" : "Imagen del negocio"} subido correctamente`);
+            setTimeout(() => setMessage(""), 3000);
+          } else {
+            setMessage("❌ Error al subir la imagen");
+          }
+        })
+        .catch(() => setMessage("❌ Error de conexión"))
+        .finally(() => {
+          if (isLogo) setUploadingLogo(false);
+          else setUploadingImage(false);
+        });
+    };
+    reader.readAsDataURL(file);
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setMessage("");
 
-    const newClinicId = crypto.randomUUID();
-    setClinicId(newClinicId);
+    const clinicId = crypto.randomUUID();
 
     fetch("/api/clinics/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clinicId: newClinicId, ...formData }),
+      body: JSON.stringify({ clinicId, ...formData }),
     })
       .then((res) => res.json())
       .then((data) => {
         if (data.clinicId) {
           localStorage.setItem("clinicData", JSON.stringify({
-            id: newClinicId,
+            id: clinicId,
             name: formData.name,
             email: formData.email,
             status: "pending",
+            logoUrl: formData.logoUrl,
           }));
           setMessage("✅ Clínica creada. Pendiente de aprobación del administrador.");
           setTimeout(() => router.push("/centro-clinico/pendiente"), 2000);
@@ -96,7 +133,7 @@ export default function CrearClinicaPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f3e8ff 0%, #d1fae5 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
-      <div style={{ background: "white", borderRadius: "16px", padding: "40px", maxWidth: "600px", width: "100%", boxShadow: "0 10px 40px rgba(0,0,0,0.1)" }}>
+      <div style={{ background: "white", borderRadius: "16px", padding: "40px", maxWidth: "700px", width: "100%", boxShadow: "0 10px 40px rgba(0,0,0,0.1)" }}>
         
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div style={{ width: "80px", height: "80px", background: "linear-gradient(135deg, #7c3aed 0%, #10b981 100%)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px", margin: "0 auto 16px" }}>🏥</div>
@@ -117,6 +154,46 @@ export default function CrearClinicaPage() {
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           
+          {/* LOGO */}
+          <div>
+            <label style={labelStyle}>Logo de la clínica</label>
+            <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+              {formData.logoUrl && (
+                <img src={formData.logoUrl} alt="Logo" style={{ width: "80px", height: "80px", borderRadius: "12px", objectFit: "cover", border: "2px solid #e5e7eb" }} />
+              )}
+              <div style={{ flex: 1 }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, "logoUrl")}
+                  disabled={uploadingLogo}
+                  style={{ ...inputStyle, padding: "10px" }}
+                />
+                {uploadingLogo && <p style={{ fontSize: "12px", color: "#7c3aed", marginTop: "4px" }}>Subiendo logo...</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* IMAGEN DEL NEGOCIO */}
+          <div>
+            <label style={labelStyle}>Imagen del negocio</label>
+            <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+              {formData.businessImageUrl && (
+                <img src={formData.businessImageUrl} alt="Negocio" style={{ width: "120px", height: "80px", borderRadius: "12px", objectFit: "cover", border: "2px solid #e5e7eb" }} />
+              )}
+              <div style={{ flex: 1 }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, "businessImageUrl")}
+                  disabled={uploadingImage}
+                  style={{ ...inputStyle, padding: "10px" }}
+                />
+                {uploadingImage && <p style={{ fontSize: "12px", color: "#7c3aed", marginTop: "4px" }}>Subiendo imagen...</p>}
+              </div>
+            </div>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
             <div>
               <label style={labelStyle}>Nombre de la clínica *</label>
@@ -207,17 +284,6 @@ export default function CrearClinicaPage() {
               value={formData.specialty}
               onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
               placeholder="Medicina general, Cirugía, etc."
-              style={inputStyle}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>URL del logo (opcional)</label>
-            <input
-              type="url"
-              value={formData.logoUrl}
-              onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-              placeholder="https://..."
               style={inputStyle}
             />
           </div>
