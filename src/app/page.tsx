@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function Home() {
   const [colorIndex, setColorIndex] = useState(0);
@@ -25,16 +26,20 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex flex-col items-center justify-center">
+      {/* Video de fondo */}
       <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
         <source src="/xpipet-bg.mp4" type="video/mp4" />
       </video>
 
+      {/* Overlay oscuro */}
       <div className="absolute inset-0 bg-black bg-opacity-30" />
 
+      {/* Logo en la esquina */}
       <div className="absolute top-4 left-4 z-10">
         <img src="/xpipet-logo.png" alt="Logo" className="w-16 h-16 object-contain" />
       </div>
 
+      {/* Contenido central */}
       <div className="relative z-10 flex flex-col items-center justify-center px-4 w-full max-w-md">
         <h1
           className={`text-5xl md:text-6xl font-extrabold text-center mb-10 ${colors[colorIndex]} transition-colors duration-700`}
@@ -43,27 +48,36 @@ export default function Home() {
           Bienvenido
         </h1>
 
+        {/* Botones de navegación */}
         <div className="w-full space-y-4 mb-10">
-          <a
+          
+          {/* 1. Explorar -> Morado -> Registro de mascotas */}
+          <Link
             href="/register"
             className="block w-full px-8 py-3 rounded-full border-2 border-purple-400 text-white font-semibold text-lg text-center hover:bg-purple-400 hover:text-gray-900 transition-all shadow-lg"
           >
             Explorar
-          </a>
-          <a
-            href="/centro-clinico"
-            className="block w-full px-8 py-3 rounded-full border-2 border-cyan-400 text-white font-semibold text-lg text-center hover:bg-cyan-400 hover:text-gray-900 transition-all shadow-lg"
-          >
-            Centro Clínico
-          </a>
-          <a
-            href="/administrador/tracking"
+          </Link>
+          
+          {/* 2. Centro Clínico -> Verde -> Login del Centro Clínico */}
+          <Link
+            href="/centro-clinico/login"
             className="block w-full px-8 py-3 rounded-full border-2 border-green-400 text-white font-semibold text-lg text-center hover:bg-green-400 hover:text-gray-900 transition-all shadow-lg"
           >
+            Centro Clínico
+          </Link>
+          
+          {/* 3. Administrador -> Cyan -> Tracking GPS */}
+          <Link
+            href="/administrador/tracking"
+            className="block w-full px-8 py-3 rounded-full border-2 border-cyan-400 text-white font-semibold text-lg text-center hover:bg-cyan-400 hover:text-gray-900 transition-all shadow-lg"
+          >
             Administrador
-          </a>
+          </Link>
+          
         </div>
 
+        {/* Tagline */}
         <p
           className="text-2xl md:text-3xl text-white font-semibold text-center"
           style={{ textShadow: "2px 2px 6px rgba(0,0,0,0.9)" }}
