@@ -1,18 +1,30 @@
 import { notFound } from "next/navigation";
+import { query } from "@/lib/db";
 
 async function getClinicData(slug: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    
-    const res = await fetch(`${baseUrl}/api/clinics/public/${slug}`, {
-      cache: "no-store",
-    });
+    // Consultar DIRECTAMENTE a Turso (sin fetch interno)
+    const clinicResult = await query(
+      "SELECT * FROM clinics WHERE slug = ? AND status = 'active'",
+      [slug]
+    );
 
-    if (!res.ok) {
+    if (!clinicResult.rows || clinicResult.rows.length === 0) {
       return null;
     }
 
-    return await res.json();
+    const clinic = clinicResult.rows[0] as any;
+
+    // Obtener servicios activos
+    const servicesResult = await query(
+      "SELECT * FROM clinic_services WHERE clinic_id = ? AND active = 1 ORDER BY name ASC",
+      [clinic.id]
+    );
+
+    return {
+      clinic,
+      services: servicesResult.rows || [],
+    };
   } catch (error) {
     console.error("Error fetching clinic:", error);
     return null;
@@ -28,7 +40,7 @@ export default async function TiendaPublicaPage(props: { params: { slug: string 
   }
 
   const clinic = data.clinic;
-  const services = data.services || [];
+  const services = data.services;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
@@ -110,7 +122,7 @@ export default async function TiendaPublicaPage(props: { params: { slug: string 
             )}
             {clinic.phone && (
               <p style={{ fontSize: "14px", color: "#6b7280", margin: "4px 0 0 0" }}>
-                 {clinic.phone}
+                📞 {clinic.phone}
               </p>
             )}
           </div>
@@ -195,7 +207,7 @@ export default async function TiendaPublicaPage(props: { params: { slug: string 
                     }}
                   >
                     <span style={{ fontSize: "14px", color: "#6b7280" }}>
-                      ⏱️ {service.duration_minutes} minutos
+                      ️ {service.duration_minutes} minutos
                     </span>
                     <button
                       style={{
