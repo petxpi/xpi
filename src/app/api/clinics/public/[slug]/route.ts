@@ -7,41 +7,39 @@ export async function GET(
 ) {
   try {
     const { slug } = params;
+    console.log("🔍 Buscando clínica con slug:", slug);
 
-    // Obtener datos de la clínica
+    // Buscar clínica activa con ese slug en TURSO
     const clinicResult = await query(
-      `SELECT id, name, slug, logo_url, business_image_url, phone, address, city, country, specialty, description
-       FROM clinics 
-       WHERE slug = ? AND status = 'active'`,
+      "SELECT * FROM clinics WHERE slug = ? AND status = 'active'",
       [slug]
     );
 
     if (!clinicResult.rows || clinicResult.rows.length === 0) {
+      console.log("❌ Clínica no encontrada o no está activa");
       return NextResponse.json(
         { message: "Clínica no encontrada" },
         { status: 404 }
       );
     }
 
-    const clinic = clinicResult.rows[0] as any;
+    const clinic = clinicResult.rows[0];
+    console.log("✅ Clínica encontrada:", (clinic as any).name);
 
     // Obtener servicios activos
     const servicesResult = await query(
-      `SELECT id, name, description, price, duration_minutes, category, specialty
-       FROM clinic_services 
-       WHERE clinic_id = ? AND active = 1
-       ORDER BY name ASC`,
-      [clinic.id]
+      "SELECT * FROM clinic_services WHERE clinic_id = ? AND active = 1 ORDER BY name ASC",
+      [(clinic as any).id]
     );
 
     return NextResponse.json({
       clinic,
       services: servicesResult.rows || [],
     });
-  } catch (error) {
-    console.error("Error al obtener clínica pública:", error);
+  } catch (error: any) {
+    console.error("Error:", error);
     return NextResponse.json(
-      { message: "Error al cargar la clínica" },
+      { message: "Error: " + error.message },
       { status: 500 }
     );
   }

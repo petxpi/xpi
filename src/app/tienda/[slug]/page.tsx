@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 
 async function getClinicData(slug: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  
   try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    
     const res = await fetch(`${baseUrl}/api/clinics/public/${slug}`, {
       cache: "no-store",
     });
@@ -19,32 +19,25 @@ async function getClinicData(slug: string) {
   }
 }
 
-export default async function TiendaPublicaPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  const data = await getClinicData(params.slug);
+export default async function TiendaPublicaPage(props: { params: { slug: string } }) {
+  const { slug } = props.params;
+  const data = await getClinicData(slug);
 
   if (!data) {
     notFound();
   }
 
-  const { clinic, services } = data;
+  const clinic = data.clinic;
+  const services = data.services || [];
 
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
-      {/* Header con imagen del negocio */}
       {clinic.business_image_url && (
         <div style={{ position: "relative", height: "300px", overflow: "hidden" }}>
           <img
             src={clinic.business_image_url}
             alt={clinic.name}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
           <div
             style={{
@@ -56,16 +49,7 @@ export default async function TiendaPublicaPage({
         </div>
       )}
 
-      {/* Información de la clínica */}
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "40px 20px",
-          position: "relative",
-        }}
-      >
-        {/* Logo y nombre */}
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "40px 20px", position: "relative" }}>
         <div
           style={{
             display: "flex",
@@ -105,68 +89,35 @@ export default async function TiendaPublicaPage({
                 boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
               }}
             >
-              
+              🏥
             </div>
           )}
           <div>
-            <h1
-              style={{
-                fontSize: "36px",
-                fontWeight: "bold",
-                color: "#1f2937",
-                margin: "0 0 8px 0",
-              }}
-            >
+            <h1 style={{ fontSize: "36px", fontWeight: "bold", color: "#1f2937", margin: "0 0 8px 0" }}>
               {clinic.name}
             </h1>
             {clinic.specialty && (
-              <p
-                style={{
-                  fontSize: "18px",
-                  color: "#6b7280",
-                  margin: "0 0 8px 0",
-                }}
-              >
+              <p style={{ fontSize: "18px", color: "#6b7280", margin: "0 0 8px 0" }}>
                 {clinic.specialty}
               </p>
             )}
             {clinic.address && (
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: "#6b7280",
-                  margin: 0,
-                }}
-              >
+              <p style={{ fontSize: "14px", color: "#6b7280", margin: 0 }}>
                 📍 {clinic.address}
                 {clinic.city && `, ${clinic.city}`}
                 {clinic.country && `, ${clinic.country}`}
               </p>
             )}
             {clinic.phone && (
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: "#6b7280",
-                  margin: "4px 0 0 0",
-                }}
-              >
-                📞 {clinic.phone}
+              <p style={{ fontSize: "14px", color: "#6b7280", margin: "4px 0 0 0" }}>
+                 {clinic.phone}
               </p>
             )}
           </div>
         </div>
 
-        {/* Servicios */}
         <div style={{ marginBottom: "40px" }}>
-          <h2
-            style={{
-              fontSize: "28px",
-              fontWeight: "bold",
-              color: "#1f2937",
-              marginBottom: "24px",
-            }}
-          >
+          <h2 style={{ fontSize: "28px", fontWeight: "bold", color: "#1f2937", marginBottom: "24px" }}>
             Nuestros Servicios
           </h2>
 
@@ -189,13 +140,7 @@ export default async function TiendaPublicaPage({
               </p>
             </div>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "20px",
-              }}
-            >
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
               {services.map((service: any) => (
                 <div
                   key={service.id}
@@ -205,26 +150,11 @@ export default async function TiendaPublicaPage({
                     padding: "24px",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                     border: "1px solid #e5e7eb",
-                    transition: "transform 0.2s, box-shadow 0.2s",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      marginBottom: "12px",
-                    }}
-                  >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                     <div style={{ flex: 1 }}>
-                      <h3
-                        style={{
-                          fontSize: "20px",
-                          fontWeight: "bold",
-                          color: "#1f2937",
-                          margin: "0 0 4px 0",
-                        }}
-                      >
+                      <h3 style={{ fontSize: "20px", fontWeight: "bold", color: "#1f2937", margin: "0 0 4px 0" }}>
                         {service.name}
                       </h3>
                       {service.category && (
@@ -243,27 +173,13 @@ export default async function TiendaPublicaPage({
                         </span>
                       )}
                     </div>
-                    <div
-                      style={{
-                        fontSize: "24px",
-                        fontWeight: "bold",
-                        color: "#10b981",
-                        marginLeft: "16px",
-                      }}
-                    >
+                    <div style={{ fontSize: "24px", fontWeight: "bold", color: "#10b981", marginLeft: "16px" }}>
                       ${parseFloat(service.price).toFixed(2)}
                     </div>
                   </div>
 
                   {service.description && (
-                    <p
-                      style={{
-                        color: "#6b7280",
-                        fontSize: "14px",
-                        lineHeight: "1.5",
-                        margin: "12px 0",
-                      }}
-                    >
+                    <p style={{ color: "#6b7280", fontSize: "14px", lineHeight: "1.5", margin: "12px 0" }}>
                       {service.description}
                     </p>
                   )}
@@ -278,12 +194,7 @@ export default async function TiendaPublicaPage({
                       borderTop: "1px solid #f3f4f6",
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        color: "#6b7280",
-                      }}
-                    >
+                    <span style={{ fontSize: "14px", color: "#6b7280" }}>
                       ⏱️ {service.duration_minutes} minutos
                     </span>
                     <button
@@ -307,7 +218,6 @@ export default async function TiendaPublicaPage({
           )}
         </div>
 
-        {/* Footer */}
         <div
           style={{
             textAlign: "center",

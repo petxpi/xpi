@@ -9,24 +9,28 @@ cloudinary.config({
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { image, folder } = body;
+    const formData = await request.formData();
+    const file = formData.get("file") as File;
 
-    if (!image) {
-      return NextResponse.json({ message: "No se proporcionó imagen" }, { status: 400 });
+    if (!file) {
+      return NextResponse.json({ message: "No se proporcionó archivo" }, { status: 400 });
     }
 
-    const result = await cloudinary.uploader.upload(image, {
-      folder: folder || "xpipet/clinics",
-      resource_type: "auto",
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
+
+    const result = await cloudinary.uploader.upload(base64, {
+      folder: "xpipet/clinics",
+      resource_type: "image",
     });
 
     return NextResponse.json({
       url: result.secure_url,
-      publicId: result.public_id,
+      public_id: result.public_id,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al subir imagen:", error);
-    return NextResponse.json({ message: "Error al subir imagen" }, { status: 500 });
+    return NextResponse.json({ message: "Error: " + error.message }, { status: 500 });
   }
 }
