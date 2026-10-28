@@ -3,16 +3,62 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+interface Appointment {
+  appointment_time: string;
+  pet_name: string;
+  client_name: string;
+  service_name: string;
+  status: string;
+}
+
 export default function CentroClinicoDashboard() {
   const [mounted, setMounted] = useState(false);
   const [activeMenu, setActiveMenu] = useState("dashboard");
+  const [clinicId, setClinicId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    todayAppointments: 0,
+    activePets: 0,
+    services: 0,
+    staff: 0,
+  });
+  const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
 
   useEffect(() => {
     setMounted(true);
+    const clinicData = localStorage.getItem("clinicData");
+    if (clinicData) {
+      try {
+        const data = JSON.parse(clinicData);
+        setClinicId(data.id || data.clinicId || "");
+      } catch (e) {
+        console.error("Error:", e);
+      }
+    }
   }, []);
 
-  if (!mounted) {
-    return null;
+  useEffect(() => {
+    if (!clinicId) {
+      setLoading(false);
+      return;
+    }
+    fetchStats();
+  }, [clinicId]);
+
+  async function fetchStats() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/clinics/${clinicId}/stats`);
+      const data = await res.json();
+      if (data.success) {
+        setStats(data.stats);
+        setTodayAppointments(data.todayAppointmentsDetails || []);
+      }
+    } catch (error) {
+      console.error("Error cargando stats:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const menuItems = [
@@ -21,21 +67,14 @@ export default function CentroClinicoDashboard() {
     { id: "pacientes", name: "Pacientes", icon: "🐾", color: "purple", href: "/centro-clinico/pacientes" },
     { id: "servicios", name: "Servicios", icon: "⚕️", color: "green", href: "/centro-clinico/servicios" },
     { id: "personal", name: "Personal", icon: "👥", color: "purple", href: "/centro-clinico/personal" },
-    { id: "reportes", name: "Reportes", icon: "", color: "green", href: "/centro-clinico/reportes" },
+    { id: "reportes", name: "Reportes", icon: "📈", color: "green", href: "/centro-clinico/reportes" },
   ];
 
-  const stats = [
-    { label: "Citas Hoy", value: "12", color: "purple", icon: "📅" },
-    { label: "Pacientes Activos", value: "148", color: "green", icon: "🐾" },
-    { label: "Servicios", value: "8", color: "purple", icon: "⚕️" },
-    { label: "Personal", value: "5", color: "green", icon: "👥" },
-  ];
-
-  const recentAppointments = [
-    { time: "09:00", pet: "Luna", owner: "María García", service: "Vacunación", status: "Completada" },
-    { time: "10:30", pet: "Max", owner: "Juan Pérez", service: "Consulta General", status: "En curso" },
-    { time: "11:45", pet: "Coco", owner: "Ana López", service: "Desparasitación", status: "Pendiente" },
-    { time: "14:00", pet: "Rocky", owner: "Carlos Ruiz", service: "Cirugía Menor", status: "Programada" },
+  const statsCards = [
+    { label: "Citas Hoy", value: stats.todayAppointments, color: "purple", icon: "📅" },
+    { label: "Pacientes Activos", value: stats.activePets, color: "green", icon: "🐾" },
+    { label: "Servicios", value: stats.services, color: "purple", icon: "⚕️" },
+    { label: "Personal", value: stats.staff, color: "green", icon: "👥" },
   ];
 
   const getColor = (color: string) => {
@@ -43,9 +82,23 @@ export default function CentroClinicoDashboard() {
     return { main: "#7c3aed", light: "#f3e8ff", text: "#6d28d9" };
   };
 
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case "completed":
+        return { background: "#d1fae5", color: "#065f46", label: "Completada" };
+      case "confirmed":
+        return { background: "#f3e8ff", color: "#6d28d9", label: "Confirmada" };
+      case "pending":
+        return { background: "#fef3c7", color: "#92400e", label: "Pendiente" };
+      default:
+        return { background: "#e5e7eb", color: "#6b7280", label: status };
+    }
+  };
+
+  if (!mounted) return null;
+
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex" }}>
-      
       {/* Sidebar */}
       <aside style={{
         width: "250px",
@@ -61,7 +114,7 @@ export default function CentroClinicoDashboard() {
             <div style={{
               width: "40px",
               height: "40px",
-              background: "linear-gradient(135deg, #7c3aed 0%, #10b981 100%)",
+              background: "#7c3aed",
               borderRadius: "10px",
               display: "flex",
               alignItems: "center",
@@ -130,7 +183,6 @@ export default function CentroClinicoDashboard() {
 
       {/* Contenido principal */}
       <main style={{ marginLeft: "250px", flex: 1, padding: "30px" }}>
-        
         <header style={{ marginBottom: "30px" }}>
           <h1 style={{ fontSize: "28px", fontWeight: "bold", color: "#1f2937", margin: "0 0 8px 0" }}>
             Dashboard
@@ -142,7 +194,7 @@ export default function CentroClinicoDashboard() {
 
         {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "30px" }}>
-          {stats.map((stat) => {
+          {statsCards.map((stat) => {
             const colors = getColor(stat.color);
             return (
               <div
@@ -166,7 +218,7 @@ export default function CentroClinicoDashboard() {
                       fontWeight: "bold",
                       color: colors.main,
                     }}>
-                      {stat.value}
+                      {loading ? "..." : stat.value}
                     </p>
                   </div>
                   <span style={{ fontSize: "32px" }}>{stat.icon}</span>
@@ -176,7 +228,7 @@ export default function CentroClinicoDashboard() {
           })}
         </div>
 
-        {/* Citas recientes */}
+        {/* Citas de hoy */}
         <div style={{
           background: "white",
           borderRadius: "12px",
@@ -187,42 +239,54 @@ export default function CentroClinicoDashboard() {
           <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#1f2937", margin: "0 0 20px 0" }}>
             Citas de Hoy
           </h2>
-          
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                  <th style={{ padding: "12px", textAlign: "left", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>Hora</th>
-                  <th style={{ padding: "12px", textAlign: "left", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>Mascota</th>
-                  <th style={{ padding: "12px", textAlign: "left", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>Propietario</th>
-                  <th style={{ padding: "12px", textAlign: "left", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>Servicio</th>
-                  <th style={{ padding: "12px", textAlign: "left", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentAppointments.map((apt, idx) => (
-                  <tr key={idx} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                    <td style={{ padding: "16px 12px", fontSize: "14px", color: "#1f2937" }}>{apt.time}</td>
-                    <td style={{ padding: "16px 12px", fontSize: "14px", fontWeight: "600", color: "#1f2937" }}>{apt.pet}</td>
-                    <td style={{ padding: "16px 12px", fontSize: "14px", color: "#6b7280" }}>{apt.owner}</td>
-                    <td style={{ padding: "16px 12px", fontSize: "14px", color: "#6b7280" }}>{apt.service}</td>
-                    <td style={{ padding: "16px 12px" }}>
-                      <span style={{
-                        padding: "4px 12px",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        background: apt.status === "Completada" ? "#d1fae5" : apt.status === "En curso" ? "#fef3c7" : "#e5e7eb",
-                        color: apt.status === "Completada" ? "#065f46" : apt.status === "En curso" ? "#92400e" : "#6b7280",
-                      }}>
-                        {apt.status}
-                      </span>
-                    </td>
+
+          {loading ? (
+            <p style={{ textAlign: "center", color: "#7c3aed", padding: "40px" }}>Cargando...</p>
+          ) : todayAppointments.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+              <div style={{ fontSize: "48px", marginBottom: "16px" }}>📅</div>
+              <p>No hay citas programadas para hoy</p>
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>Hora</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>Mascota</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>Propietario</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>Servicio</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "13px", color: "#6b7280", fontWeight: "600" }}>Estado</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {todayAppointments.map((apt, idx) => {
+                    const statusStyle = getStatusStyle(apt.status);
+                    return (
+                      <tr key={idx} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                        <td style={{ padding: "16px 12px", fontSize: "14px", color: "#1f2937", fontWeight: "600" }}>{apt.appointment_time}</td>
+                        <td style={{ padding: "16px 12px", fontSize: "14px", fontWeight: "600", color: "#1f2937" }}>{apt.pet_name}</td>
+                        <td style={{ padding: "16px 12px", fontSize: "14px", color: "#6b7280" }}>{apt.client_name}</td>
+                        <td style={{ padding: "16px 12px", fontSize: "14px", color: "#6b7280" }}>{apt.service_name}</td>
+                        <td style={{ padding: "16px 12px" }}>
+                          <span style={{
+                            padding: "4px 12px",
+                            borderRadius: "12px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            background: statusStyle.background,
+                            color: statusStyle.color,
+                          }}>
+                            {statusStyle.label}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Accesos rápidos */}
@@ -230,7 +294,7 @@ export default function CentroClinicoDashboard() {
           <Link
             href="/centro-clinico/crear"
             style={{
-              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+              background: "#10b981",
               color: "white",
               padding: "20px",
               borderRadius: "12px",
@@ -243,11 +307,11 @@ export default function CentroClinicoDashboard() {
             <div style={{ fontSize: "24px", marginBottom: "8px" }}>🏥</div>
             Crear Nueva Clínica
           </Link>
-          
+
           <Link
             href="/centro-clinico/servicios"
             style={{
-              background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
+              background: "#7c3aed",
               color: "white",
               padding: "20px",
               borderRadius: "12px",
@@ -260,11 +324,11 @@ export default function CentroClinicoDashboard() {
             <div style={{ fontSize: "24px", marginBottom: "8px" }}>⚕️</div>
             Gestionar Servicios
           </Link>
-          
+
           <Link
             href="/centro-clinico/personal"
             style={{
-              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+              background: "#10b981",
               color: "white",
               padding: "20px",
               borderRadius: "12px",
@@ -277,11 +341,11 @@ export default function CentroClinicoDashboard() {
             <div style={{ fontSize: "24px", marginBottom: "8px" }}>👥</div>
             Gestionar Personal
           </Link>
-          
+
           <Link
-            href="/centro-clinico/citas"
+            href="/centro-clinico/citas/nueva"
             style={{
-              background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
+              background: "#7c3aed",
               color: "white",
               padding: "20px",
               borderRadius: "12px",
