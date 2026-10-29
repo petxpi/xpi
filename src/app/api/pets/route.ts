@@ -1,85 +1,117 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
+import { query } from "@/lib/db";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.BETTER_AUTH_SECRET || "secret"
-);
-
-function generatePublicId(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let result = "XPI-";
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth-token");
+    const { searchParams } = new URL(request.url);
+    const clinicId = searchParams.get("clinicId");
+    const petId = searchParams.get("petId");
 
-    if (!token) {
-      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    if (!clinicId) {
+      return NextResponse.json({ message: "Falta clinicId" }, { status: 400 });
     }
 
-    const { payload } = await jwtVerify(token.value, JWT_SECRET);
-    const userId = payload.userId as string;
+    if (petId) {
+      const petResult = await query(
+        `SELECT * FROM clinic_patients WHERE id = ? AND clinic_id = ?`,
+        [petId, clinicId]
+      );
+      const pet = (petResult.rows as any[])?.[0];
 
-    const result = await db.execute(
-      "SELECT * FROM pets WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC",
-      [userId]
+      if (!pet) {
+        return NextResponse.json({ message: "Mascota no encontrada" }, { status: 404 });
+      }
+
+      const vaccines = await query(
+        `SELECT * FROM clinic_vaccines WHERE pet_id = ? ORDER BY date_applied DESC`,
+        [petId]
+      );
+      const allergies = await query(
+        `SELECT * FROM clinic_allergies WHERE pet_id = ?`,
+        [petId]
+      );
+
+      return NextResponse.json({
+        success: true,
+        pet: {
+          ...pet,
+          vaccines: vaccines.rows || [],
+          allergies: allergies.rows || []
+        }
+      });
+    }
+
+    const result = await query(
+      `SELECT id, name, species, breed, gender, owner_name, owner_phone, created_at
+       FROM clinic_patients
+       WHERE clinic_id = ?
+       ORDER BY created_at DESC`,
+      [clinicId]
     );
 
-    return NextResponse.json({ pets: result.rows }, { status: 200 });
-  } catch (error) {
+    return NextResponse.json({
+      success: true,
+      pets: result.rows || []
+    });
+
+  } catch (error: any) {
     console.error("Error al obtener mascotas:", error);
-    return NextResponse.json({ message: "Error interno" }, { status: 500 });
+    return NextResponse.json({ message: "Error: " + error.message }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth-token");
-
-    if (!token) {
-      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
-    }
-
-    const { payload } = await jwtVerify(token.value, JWT_SECRET);
-    const userId = payload.userId as string;
-
     const body = await request.json();
-    // AGREGADO: photo al destructuring
-    const { name, species, breed, color, sex, microchip, photo } = body;
+    const {
+      clinicId, name, species, breed, gender, birthDate, weight,
+      ownerName, ownerPhone, ownerEmail, photoUrl
+    } = body;
 
-    if (!name || !species) {
-      return NextResponse.json(
-        { message: "Nombre y especie son obligatorios" },
-        { status: 400 }
-      );
+    if (!clinicId || !name || !species || !ownerName || !ownerPhone) {
+      return NextResponse.json({ message: "Faltan datos obligatorios" }, { status: 400 });
     }
 
-    const petId = crypto.randomUUID();
-    const publicId = generatePublicId();
+    const id = crypto.randomUUID();
 
-    // AGREGADO: photo_url en el INSERT
-    await db.execute(
-      `INSERT INTO pets (id, public_id, user_id, name, species, breed, color, sex, microchip, photo_url, status, gps_enabled, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'home', 0, datetime('now'))`,
-      // AGREGADO: photo al final del array
-      [petId, publicId, userId, name, species, breed || null, color || null, sex || null, microchip || null, photo || null]
+    await query(
+      `INSERT INTO clinic_patients
+       (id, clinic_id, name, species, breed, gender, birth_date, weight, photo_url, owner_name, owner_phone, owner_email, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+      [id, clinicId, name, species, breed || '', gender || '', birthDate || '', weight || null, photoUrl || '', ownerName, ownerPhone, ownerEmail || '']
     );
 
-    return NextResponse.json(
-      { message: "Mascota creada exitosamente", petId, publicId },
-      { status: 201 }
-    );
+    return NextResponse.json({
+      success: true,
+      message: "Mascota registrada exitosamente",
+      petId: id
+    });
+
   } catch (error: any) {
     console.error("Error al crear mascota:", error);
-    return NextResponse.json({ message: "Error interno: " + error.message }, { status: 500 });
+    return NextResponse.json({ message: "Error: " + error.message }, { status: 500 });
+  }
+}
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { petId, clinicId, name, species, breed, gender, birthDate, weight, ownerName, ownerPhone, ownerEmail, photoUrl } = body;
+
+    if (!petId || !clinicId) {
+      return NextResponse.json({ message: "Faltan datos obligatorios" }, { status: 400 });
+    }
+
+    await query(
+      `UPDATE clinic_patients
+       SET name = ?, species = ?, breed = ?, gender = ?, birth_date = ?, weight = ?,
+           photo_url = ?, owner_name = ?, owner_phone = ?, owner_email = ?, updated_at = datetime('now')
+       WHERE id = ? AND clinic_id = ?`,
+      [name, species, breed || '', gender || '', birthDate || '', weight || null, photoUrl || '', ownerName, ownerPhone, ownerEmail || '', petId, clinicId]
+    );
+
+    return NextResponse.json({ success: true, message: "Mascota actualizada" });
+  } catch (error: any) {
+    console.error("Error:", error);
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

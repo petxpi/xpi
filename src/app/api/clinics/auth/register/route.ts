@@ -1,21 +1,17 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import bcrypt from "bcryptjs";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { clinicName, ownerName, email, password, specialty } = body;
+    const { name, email, phone } = body;
 
-    if (!clinicName || !ownerName || !email || !password) {
-      return NextResponse.json(
-        { message: "Todos los campos son obligatorios" },
-        { status: 400 }
-      );
+    if (!name || !email) {
+      return NextResponse.json({ message: "Faltan datos obligatorios" }, { status: 400 });
     }
 
     // Verificar si ya existe
-    const existing = await query("SELECT id FROM clinics WHERE email = ?", [email]);
+    const existing: any = await query("SELECT id FROM clinics WHERE email = ?", [email]);
     if (existing.rows && existing.rows.length > 0) {
       return NextResponse.json(
         { message: "Ya existe una clínica con este email" },
@@ -23,26 +19,26 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hashear contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const clinicId = crypto.randomUUID();
+    const id = crypto.randomUUID();
 
-    // Crear clínica
     await query(
-      `INSERT INTO clinics (id, name, owner_name, email, password, specialty, approved) 
-       VALUES (?, ?, ?, ?, ?, ?, 0)`,
-      [clinicId, clinicName, ownerName, email, hashedPassword, specialty || "General"]
+      `INSERT INTO clinics (id, name, email, phone, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 'active', datetime('now'), datetime('now'))`,
+      [id, name, email, phone || '']
     );
 
-    return NextResponse.json(
-      { message: "Clínica registrada. Esperando aprobación del administrador." },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error("Error en registro de clínica:", error);
-    return NextResponse.json(
-      { message: "Error al registrar clínica" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: true,
+      clinic: {
+        id,
+        name,
+        email,
+        status: 'active'
+      }
+    });
+
+  } catch (error: any) {
+    console.error("Error en registro:", error);
+    return NextResponse.json({ message: "Error: " + error.message }, { status: 500 });
   }
 }
