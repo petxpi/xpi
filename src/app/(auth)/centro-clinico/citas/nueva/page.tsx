@@ -11,6 +11,7 @@ export default function NuevaCitaPage() {
   const [patients, setPatients] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [petType, setPetType] = useState<"existing" | "new">("existing");
+  
   const [formData, setFormData] = useState({
     petId: "",
     serviceId: "",
@@ -18,7 +19,6 @@ export default function NuevaCitaPage() {
     appointmentTime: "",
     status: "scheduled",
     notes: "",
-    // Mascota nueva
     newPetName: "",
     newPetSpecies: "Perro",
     newPetBreed: "",
@@ -117,7 +117,6 @@ export default function NuevaCitaPage() {
       <div style={{maxWidth: "800px", margin: "0 auto", padding: "32px"}}>
         <form onSubmit={handleSubmit} style={{background: "white", borderRadius: "16px", padding: "32px"}}>
 
-          {/* Selector de tipo de mascota */}
           <div style={{marginBottom: "24px", padding: "16px", background: "#f3f4f6", borderRadius: "12px"}}>
             <label style={{display: "block", marginBottom: "12px", fontWeight: "bold", fontSize: "16px"}}>¿La mascota ya está registrada?</label>
             <div style={{display: "flex", gap: "16px"}}>
@@ -132,7 +131,6 @@ export default function NuevaCitaPage() {
             </div>
           </div>
 
-          {/* Mascota existente */}
           {petType === "existing" && (
             <div style={{marginBottom: "24px"}}>
               <label style={{display: "block", marginBottom: "8px", fontWeight: "bold"}}>Mascota *</label>
@@ -150,7 +148,6 @@ export default function NuevaCitaPage() {
             </div>
           )}
 
-          {/* Mascota nueva */}
           {petType === "new" && (
             <div style={{marginBottom: "24px", padding: "20px", background: "#fef3c7", borderRadius: "12px", border: "2px solid #f59e0b"}}>
               <h3 style={{margin: "0 0 16px 0", color: "#92400e"}}>Datos de la nueva mascota</h3>
@@ -188,7 +185,6 @@ export default function NuevaCitaPage() {
             </div>
           )}
 
-          {/* Servicio */}
           <div style={{marginBottom: "24px"}}>
             <label style={{display: "block", marginBottom: "8px", fontWeight: "bold"}}>Servicio *</label>
             <select
@@ -204,7 +200,6 @@ export default function NuevaCitaPage() {
             </select>
           </div>
 
-          {/* Fecha y Hora */}
           <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px"}}>
             <div>
               <label style={{display: "block", marginBottom: "8px", fontWeight: "bold"}}>Fecha *</label>
@@ -216,13 +211,11 @@ export default function NuevaCitaPage() {
             </div>
           </div>
 
-          {/* Notas */}
           <div style={{marginBottom: "24px"}}>
             <label style={{display: "block", marginBottom: "8px", fontWeight: "bold"}}>Notas adicionales</label>
             <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} rows={4} style={{width: "100%", padding: "12px", border: "2px solid #e5e7eb", borderRadius: "8px", boxSizing: "border-box", resize: "vertical"}} placeholder="Observaciones o comentarios adicionales..." />
           </div>
 
-          {/* Botones */}
           <div style={{display: "flex", gap: "16px"}}>
             <Link href="/centro-clinico/dashboard" style={{flex: 1, padding: "14px", background: "#e5e7eb", borderRadius: "10px", textDecoration: "none", textAlign: "center", fontWeight: "bold"}}>
               Cancelar
