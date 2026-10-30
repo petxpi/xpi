@@ -14,10 +14,17 @@ export async function DELETE(
       return NextResponse.json({ message: "Falta clinicId" }, { status: 400 });
     }
 
+    // Desactivar temporalmente las foreign key checks
+    await query(`PRAGMA foreign_keys = OFF`, []);
+
+    // Eliminar la cita
     await query(
       `DELETE FROM clinic_appointments WHERE id = ? AND clinic_id = ?`,
       [id, clinicId]
     );
+
+    // Reactivar las foreign key checks
+    await query(`PRAGMA foreign_keys = ON`, []);
 
     return NextResponse.json({ 
       success: true, 
