@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
+// GET - Obtener mascotas (usado por Centro Clínico y Explorar)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const clinicId = searchParams.get("clinicId");
     const petId = searchParams.get("petId");
 
-    if (!clinicId) {
-      return NextResponse.json({ message: "Falta clinicId" }, { status: 400 });
-    }
-
+    // Si viene petId, devolver detalle de una mascota
     if (petId) {
-      const petResult = await query(
+      const petResult: any = await query(
         `SELECT * FROM clinic_patients WHERE id = ? AND clinic_id = ?`,
         [petId, clinicId]
       );
@@ -41,18 +39,23 @@ export async function GET(request: Request) {
       });
     }
 
-    const result = await query(
-      `SELECT id, name, species, breed, gender, owner_name, owner_phone, created_at
-       FROM clinic_patients
-       WHERE clinic_id = ?
-       ORDER BY created_at DESC`,
-      [clinicId]
-    );
+    // Si viene clinicId, listar todas las mascotas de la clínica
+    if (clinicId) {
+      const result: any = await query(
+        `SELECT id, name, species, breed, gender, owner_name, owner_phone, photo_url, created_at
+         FROM clinic_patients
+         WHERE clinic_id = ?
+         ORDER BY created_at DESC`,
+        [clinicId]
+      );
 
-    return NextResponse.json({
-      success: true,
-      pets: result.rows || []
-    });
+      return NextResponse.json({
+        success: true,
+        pets: result.rows || []
+      });
+    }
+
+    return NextResponse.json({ message: "Falta clinicId o petId" }, { status: 400 });
 
   } catch (error: any) {
     console.error("Error al obtener mascotas:", error);
@@ -60,9 +63,13 @@ export async function GET(request: Request) {
   }
 }
 
+// POST - Crear nueva mascota (Centro Clínico)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    console.log("=== BODY POST pets ===", body);
+    console.log("=== photoUrl recibido ===", body.photoUrl?.substring(0, 50));
+
     const {
       clinicId, name, species, breed, gender, birthDate, weight,
       ownerName, ownerPhone, ownerEmail, photoUrl
@@ -78,8 +85,23 @@ export async function POST(request: Request) {
       `INSERT INTO clinic_patients
        (id, clinic_id, name, species, breed, gender, birth_date, weight, photo_url, owner_name, owner_phone, owner_email, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-      [id, clinicId, name, species, breed || '', gender || '', birthDate || '', weight || null, photoUrl || '', ownerName, ownerPhone, ownerEmail || '']
+      [
+        id,
+        clinicId,
+        name,
+        species,
+        breed || '',
+        gender || '',
+        birthDate || '',
+        weight || null,
+        photoUrl || '',
+        ownerName,
+        ownerPhone,
+        ownerEmail || ''
+      ]
     );
+
+    console.log("=== Mascota creada con photoUrl ===", photoUrl ? "SÍ" : "NO");
 
     return NextResponse.json({
       success: true,
@@ -92,6 +114,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Error: " + error.message }, { status: 500 });
   }
 }
+
+// PUT - Actualizar mascota (Centro Clínico)
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
