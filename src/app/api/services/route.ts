@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     }
 
     const result: any = await query(
-      `SELECT id, name, price, duration, active 
+      `SELECT id, name, price, duration_minutes, active, category
        FROM clinic_services 
        WHERE clinic_id = ? AND active = 1 
        ORDER BY name`,
