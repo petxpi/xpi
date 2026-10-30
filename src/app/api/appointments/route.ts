@@ -50,16 +50,11 @@ export async function POST(request: Request) {
     const { 
       clinicId, 
       petId, 
-      petName, 
-      clientName, 
-      clientPhone, 
-      clientEmail, 
       serviceId, 
-      serviceName,
       appointmentDate, 
-      appointmentTime, 
-      status, 
-      notes 
+      appointmentTime,
+      status,
+      notes
     } = body;
 
     if (!clinicId || !appointmentDate) {
@@ -71,24 +66,25 @@ export async function POST(request: Request) {
 
     const id = crypto.randomUUID();
 
+    // Combinar fecha y hora si existe appointmentTime
+    const fullDateTime = appointmentTime 
+      ? `${appointmentDate} ${appointmentTime}` 
+      : appointmentDate;
+
+    // INSERT usando las columnas reales de la tabla
+    // patient_id = petId (son lo mismo)
     await query(
       `INSERT INTO clinic_appointments 
-       (id, clinic_id, pet_id, pet_name, client_name, client_phone, client_email, 
-        service_id, appointment_date, appointment_time, status, notes, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+       (id, clinic_id, patient_id, service_id, appointment_date, status, pet_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         clinicId,
-        petId || null,
-        petName || '',
-        clientName || '',
-        clientPhone || '',
-        clientEmail || '',
+        petId || null,  // patient_id = petId
         serviceId || null,
-        appointmentDate,
-        appointmentTime || '',
+        fullDateTime,
         status || 'pending',
-        notes || ''
+        petId || null
       ]
     );
 
@@ -122,7 +118,7 @@ export async function PUT(request: Request) {
 
     await query(
       `UPDATE clinic_appointments 
-       SET diagnosis = ?, vet_name = ?, vet_id = ?, pet_id = ?, status = ?, updated_at = datetime('now')
+       SET diagnosis = ?, vet_name = ?, vet_id = ?, pet_id = ?, status = ?
        WHERE id = ? AND clinic_id = ?`,
       [diagnosis || '', vetName || '', vetId || '', petId || '', status || '', id, clinicId]
     );
