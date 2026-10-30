@@ -1,34 +1,22 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
-// GET - Obtener citas
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const clinicId = searchParams.get("clinicId");
-    const petId = searchParams.get("petId");
 
     if (!clinicId) {
       return NextResponse.json({ message: "Falta clinicId" }, { status: 400 });
     }
 
-    if (petId) {
-      const result: any = await query(
-        `SELECT * FROM clinic_appointments 
-         WHERE clinic_id = ? AND pet_id = ?
-         ORDER BY appointment_date DESC`,
-        [clinicId, petId]
-      );
-      return NextResponse.json({ 
-        success: true, 
-        appointments: result.rows || [] 
-      });
-    }
-
     const result: any = await query(
-      `SELECT * FROM clinic_appointments 
-       WHERE clinic_id = ?
-       ORDER BY appointment_date DESC`,
+      `SELECT a.*, p.name as pet_name, s.name as service_name
+       FROM clinic_appointments a
+       LEFT JOIN clinic_patients p ON a.patient_id = p.id
+       LEFT JOIN clinic_services s ON a.service_id = s.id
+       WHERE a.clinic_id = ?
+       ORDER BY a.appointment_date DESC`,
       [clinicId]
     );
 
@@ -43,37 +31,68 @@ export async function GET(request: Request) {
   }
 }
 
-// POST - Crear nueva cita
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log("=== BODY RECIBIDO EN POST ===", body);
+    console.log("=== BODY POST appointments ===", body);
 
     const { 
       clinicId, 
       petId, 
+      patientId,
       serviceId, 
       appointmentDate, 
       appointmentTime,
-      status
+      status,
+      notes,
+      // Datos de mascota nueva
+      newPetName,
+      newPetSpecies,
+      newPetBreed,
+      newOwnerName,
+      newOwnerPhone,
+      newOwnerEmail
     } = body;
 
     if (!clinicId || !appointmentDate) {
       return NextResponse.json({ 
         success: false, 
-        message: "Faltan datos obligatorios (clinicId y appointmentDate)" 
+        message: "Faltan datos obligatorios" 
       }, { status: 400 });
     }
 
-    if (!petId || petId === "") {
+    let finalPetId = petId || patientId;
+
+    // Si es mascota nueva, crearla primero
+    if (!finalPetId && newPetName) {
+      const newPetId = crypto.randomUUID();
+      await query(
+        `INSERT INTO clinic_patients 
+         (id, clinic_id, name, species, breed, owner_name, owner_phone, owner_email)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          newPetId,
+          clinicId,
+          newPetName,
+          newPetSpecies || 'Perro',
+          newPetBreed || '',
+          newOwnerName || '',
+          newOwnerPhone || '',
+          newOwnerEmail || ''
+        ]
+      );
+      finalPetId = newPetId;
+      console.log("Mascota nueva creada:", newPetId);
+    }
+
+    if (!finalPetId) {
       return NextResponse.json({
         success: false,
-        message: "Debes seleccionar una mascota válida"
+        message: "Debes seleccionar o crear una mascota"
       }, { status: 400 });
     }
 
     const id = crypto.randomUUID();
-
     const fullDateTime = appointmentTime 
       ? `${appointmentDate} ${appointmentTime}` 
       : appointmentDate;
@@ -85,11 +104,11 @@ export async function POST(request: Request) {
       [
         id,
         clinicId,
-        petId,
+        finalPetId,
         serviceId || null,
         fullDateTime,
-        status || 'pending',
-        petId
+        status || 'scheduled',
+        finalPetId
       ]
     );
 
@@ -108,11 +127,10 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT - Actualizar cita
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, clinicId, diagnosis, vetName, vetId, petId, status } = body;
+    const { id, clinicId, diagnosis, vetName, vetId, patientId, status } = body;
 
     if (!id || !clinicId) {
       return NextResponse.json({ 
@@ -123,9 +141,9 @@ export async function PUT(request: Request) {
 
     await query(
       `UPDATE clinic_appointments 
-       SET diagnosis = ?, vet_name = ?, vet_id = ?, pet_id = ?, status = ?
+       SET diagnosis = ?, vet_name = ?, vet_id = ?, patient_id = ?, status = ?
        WHERE id = ? AND clinic_id = ?`,
-      [diagnosis || '', vetName || '', vetId || '', petId || '', status || '', id, clinicId]
+      [diagnosis || '', vetName || '', vetId || '', patientId || '', status || '', id, clinicId]
     );
 
     return NextResponse.json({ 

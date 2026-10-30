@@ -15,7 +15,7 @@ export async function GET(
     const { clinicId } = params;
     const today = getColombiaDate();
 
-    console.log("Fecha en Colombia:", today, "ClinicId:", clinicId);
+    console.log("Stats - Fecha:", today, "ClinicId:", clinicId);
 
     let todayAppointments = 0;
     let activePets = 0;
@@ -32,19 +32,18 @@ export async function GET(
       );
       todayAppointments = result.rows?.[0]?.total || 0;
     } catch (e) {
-      console.log("Error contando citas de hoy:", e);
+      console.log("Error citas hoy:", e);
     }
 
-    // 2. Pacientes activos (mascotas únicas con citas no canceladas)
+    // 2. Pacientes activos (total de mascotas registradas)
     try {
       const result: any = await query(
-        `SELECT COUNT(DISTINCT pet_id) as total FROM clinic_appointments
-         WHERE clinic_id = ? AND status != 'cancelled' AND pet_id IS NOT NULL`,
+        `SELECT COUNT(*) as total FROM clinic_patients WHERE clinic_id = ?`,
         [clinicId]
       );
       activePets = result.rows?.[0]?.total || 0;
     } catch (e) {
-      console.log("Error contando mascotas activas:", e);
+      console.log("Error pacientes:", e);
     }
 
     // 3. Servicios activos
@@ -56,36 +55,37 @@ export async function GET(
       );
       services = result.rows?.[0]?.total || 0;
     } catch (e) {
-      console.log("Error contando servicios:", e);
+      console.log("Error servicios:", e);
     }
 
-    // 4. Personal
+    // 4. Personal activo
     try {
       const result: any = await query(
-        `SELECT COUNT(*) as total FROM clinic_staff WHERE clinic_id = ?`,
+        `SELECT COUNT(*) as total FROM clinic_staff
+         WHERE clinic_id = ? AND (active = 1 OR status = 'active')`,
         [clinicId]
       );
       staffCount = result.rows?.[0]?.total || 0;
     } catch (e) {
-      console.log("Error contando personal:", e);
+      console.log("Error personal:", e);
     }
 
-    // 5. Detalles de citas de hoy (con JOIN para obtener nombres)
+    // 5. Detalles de citas de hoy
     try {
       const result: any = await query(
-        `SELECT a.appointment_time, a.status, a.service_id,
-                p.name as pet_name,
+        `SELECT a.appointment_date, a.status, a.service_id, a.patient_id,
+                p.name as pet_name, p.species,
                 s.name as service_name
          FROM clinic_appointments a
-         LEFT JOIN clinic_patients p ON a.pet_id = p.id
+         LEFT JOIN clinic_patients p ON a.patient_id = p.id
          LEFT JOIN clinic_services s ON a.service_id = s.id
          WHERE a.clinic_id = ? AND a.appointment_date = ? AND a.status != 'cancelled'
-         ORDER BY a.appointment_time ASC`,
+         ORDER BY a.appointment_date ASC`,
         [clinicId, today]
       );
       todayAppointmentsDetails = result.rows || [];
     } catch (e) {
-      console.log("Error obteniendo detalles de citas:", e);
+      console.log("Error detalles citas:", e);
     }
 
     return NextResponse.json({
@@ -100,10 +100,10 @@ export async function GET(
     });
 
   } catch (error: any) {
-    console.error("Error al obtener stats:", error);
+    console.error("Error stats:", error);
     return NextResponse.json({ 
       success: false,
-      message: "Error: " + error.message,
+      message: error.message,
       stats: { todayAppointments: 0, activePets: 0, services: 0, staff: 0 },
       todayAppointmentsDetails: []
     }, { status: 200 });
