@@ -23,6 +23,8 @@ export default function ConfiguracionPage() {
     saturdayOpen: "08:00", saturdayClose: "14:00",
     sundayClosed: true,
     appointmentDuration: 30, appointmentMargin: 10,
+    currency: "COP", taxRate: 0,
+    emailNotifications: true, smsNotifications: false, reminderHours: 24,
   });
 
   useEffect(() => {
@@ -51,6 +53,9 @@ export default function ConfiguracionPage() {
           saturdayOpen: c.saturday_open || "08:00", saturdayClose: c.saturday_close || "14:00",
           sundayClosed: c.sunday_closed !== 0 && c.sunday_closed !== false,
           appointmentDuration: c.appointment_duration || 30, appointmentMargin: c.appointment_margin || 10,
+          currency: c.currency || "COP", taxRate: c.tax_rate || 0,
+          emailNotifications: c.email_notifications === 1, smsNotifications: c.sms_notifications === 1,
+          reminderHours: c.reminder_hours || 24,
         });
       }
     } catch (error) {
@@ -62,7 +67,26 @@ export default function ConfiguracionPage() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setFormData(prev => ({ ...prev, [field]: reader.result as string }));
+      reader.onloadend = () => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Redimensionar: logo max 200px, banner max 800px
+          const maxWidth = field === 'logoUrl' ? 200 : 800;
+          const scale = maxWidth / img.width;
+          canvas.width = maxWidth;
+          canvas.height = img.height * scale;
+          
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          // Convertir a JPEG con calidad 0.7 (70%)
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          setFormData(prev => ({ ...prev, [field]: compressedBase64 }));
+        };
+        img.src = reader.result as string;
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -83,6 +107,10 @@ export default function ConfiguracionPage() {
           banner_url: formData.bannerUrl,
           appointment_duration: formData.appointmentDuration,
           appointment_margin: formData.appointmentMargin,
+          tax_rate: formData.taxRate,
+          email_notifications: formData.emailNotifications ? 1 : 0,
+          sms_notifications: formData.smsNotifications ? 1 : 0,
+          reminder_hours: formData.reminderHours,
         }),
       });
       const data = await res.json();
@@ -104,6 +132,8 @@ export default function ConfiguracionPage() {
     { id: "general", label: "🏥 Datos y Apariencia" },
     { id: "schedule", label: "⏰ Horarios" },
     { id: "appointments", label: "📅 Reglas de Citas" },
+    { id: "billing", label: "💳 Facturación" },
+    { id: "notifications", label: "📧 Notificaciones" },
     { id: "quick", label: "⚡ Accesos Rápidos" },
   ];
 
@@ -196,6 +226,10 @@ export default function ConfiguracionPage() {
                   <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>País</label>
                   <input value={formData.country} onChange={(e) => setFormData({ ...formData, country: e.target.value })} style={{ width: "100%", padding: "12px", border: "2px solid #e5e7eb", borderRadius: "8px", boxSizing: "border-box" }} />
                 </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>Descripción</label>
+                  <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={4} style={{ width: "100%", padding: "12px", border: "2px solid #e5e7eb", borderRadius: "8px", boxSizing: "border-box", resize: "vertical" }} placeholder="Breve descripción de la clínica..." />
+                </div>
               </div>
             </div>
           )}
@@ -241,6 +275,54 @@ export default function ConfiguracionPage() {
                 <div>
                   <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>Margen entre citas (minutos)</label>
                   <input type="number" value={formData.appointmentMargin} onChange={(e) => setFormData({ ...formData, appointmentMargin: parseInt(e.target.value) || 10 })} style={{ width: "100%", padding: "12px", border: "2px solid #e5e7eb", borderRadius: "8px", boxSizing: "border-box" }} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "billing" && (
+            <div>
+              <h2 style={{ fontSize: "22px", fontWeight: "bold", marginBottom: "24px", color: "#1f2937" }}>Configuración de Facturación</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>Moneda</label>
+                  <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} style={{ width: "100%", padding: "12px", border: "2px solid #e5e7eb", borderRadius: "8px", boxSizing: "border-box" }}>
+                    <option value="COP">Peso Colombiano (COP)</option>
+                    <option value="USD">Dólar (USD)</option>
+                    <option value="EUR">Euro (EUR)</option>
+                    <option value="MXN">Peso Mexicano (MXN)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>Tasa de Impuesto (%)</label>
+                  <input type="number" step="0.01" value={formData.taxRate} onChange={(e) => setFormData({ ...formData, taxRate: parseFloat(e.target.value) || 0 })} style={{ width: "100%", padding: "12px", border: "2px solid #e5e7eb", borderRadius: "8px", boxSizing: "border-box" }} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "notifications" && (
+            <div>
+              <h2 style={{ fontSize: "22px", fontWeight: "bold", marginBottom: "24px", color: "#1f2937" }}>Configuración de Notificaciones</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px", background: "#f9fafb", borderRadius: "8px" }}>
+                  <input type="checkbox" checked={formData.emailNotifications} onChange={(e) => setFormData({ ...formData, emailNotifications: e.target.checked })} style={{ width: "20px", height: "20px" }} />
+                  <div>
+                    <label style={{ fontWeight: "bold" }}>Notificaciones por Email</label>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6b7280" }}>Enviar confirmaciones y recordatorios por correo</p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px", background: "#f9fafb", borderRadius: "8px" }}>
+                  <input type="checkbox" checked={formData.smsNotifications} onChange={(e) => setFormData({ ...formData, smsNotifications: e.target.checked })} style={{ width: "20px", height: "20px" }} />
+                  <div>
+                    <label style={{ fontWeight: "bold" }}>Notificaciones por SMS</label>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6b7280" }}>Enviar recordatorios por mensaje de texto</p>
+                  </div>
+                </div>
+                <div style={{ padding: "16px", background: "#f9fafb", borderRadius: "8px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}>Horas de anticipación para recordatorios</label>
+                  <input type="number" value={formData.reminderHours} onChange={(e) => setFormData({ ...formData, reminderHours: parseInt(e.target.value) || 24 })} style={{ width: "100%", padding: "12px", border: "2px solid #e5e7eb", borderRadius: "8px", boxSizing: "border-box" }} />
+                  <p style={{ margin: "8px 0 0 0", fontSize: "13px", color: "#6b7280" }}>Enviar recordatorio X horas antes de la cita</p>
                 </div>
               </div>
             </div>
