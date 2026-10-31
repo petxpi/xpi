@@ -1,61 +1,72 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { cookies } from "next/headers";
 
-// GET - Obtener mascotas (usado por Centro Clínico y Explorar)
+// ==========================================
+// GET - Obtener mascotas (Soporta Centro Clínico y Usuario Común)
+// ==========================================
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const clinicId = searchParams.get("clinicId");
     const petId = searchParams.get("petId");
 
-    // Si viene petId, devolver detalle de una mascota
-    if (petId) {
-      const petResult: any = await query(
-        `SELECT * FROM clinic_patients WHERE id = ? AND clinic_id = ?`,
-        [petId, clinicId]
-      );
-      const pet = (petResult.rows as any[])?.[0];
+    // CASO 1: CENTRO CLÍNICO (tiene clinicId)
+    if (clinicId) {
+      if (petId) {
+        const petResult: any = await query(
+          `SELECT * FROM clinic_patients WHERE id = ? AND clinic_id = ?`,
+          [petId, clinicId]
+        );
+        const pet = (petResult.rows as any[])?.[0];
+        if (!pet) return NextResponse.json({ message: "Mascota no encontrada" }, { status: 404 });
 
-      if (!pet) {
-        return NextResponse.json({ message: "Mascota no encontrada" }, { status: 404 });
+        const vaccines = await query(`SELECT * FROM clinic_vaccines WHERE pet_id = ? ORDER BY date_applied DESC`, [petId]);
+        const allergies = await query(`SELECT * FROM clinic_allergies WHERE pet_id = ?`, [petId]);
+
+        return NextResponse.json({
+          success: true,
+          pet: { ...pet, vaccines: vaccines.rows || [], allergies: allergies.rows || [] }
+        });
       }
 
-      const vaccines = await query(
-        `SELECT * FROM clinic_vaccines WHERE pet_id = ? ORDER BY date_applied DESC`,
-        [petId]
-      );
-      const allergies = await query(
-        `SELECT * FROM clinic_allergies WHERE pet_id = ?`,
-        [petId]
-      );
-
-      return NextResponse.json({
-        success: true,
-        pet: {
-          ...pet,
-          vaccines: vaccines.rows || [],
-          allergies: allergies.rows || []
-        }
-      });
-    }
-
-    // Si viene clinicId, listar todas las mascotas de la clínica
-    if (clinicId) {
       const result: any = await query(
         `SELECT id, name, species, breed, gender, owner_name, owner_phone, photo_url, created_at
-         FROM clinic_patients
-         WHERE clinic_id = ?
-         ORDER BY created_at DESC`,
+         FROM clinic_patients WHERE clinic_id = ? ORDER BY created_at DESC`,
         [clinicId]
       );
-
-      return NextResponse.json({
-        success: true,
-        pets: result.rows || []
-      });
+      return NextResponse.json({ success: true, pets: result.rows || [] });
     }
 
-    return NextResponse.json({ message: "Falta clinicId o petId" }, { status: 400 });
+    // CASO 2: USUARIO COMÚN / EXPLORAR (sin clinicId)
+    // Obtenemos el userId de la cookie de autenticación
+    const cookieStore = await cookies();
+    // ⚠️ IMPORTANTE: Ajusta "auth-token" al nombre real de tu cookie de sesión si es diferente (ej: "session", "token")
+    const token = cookieStore.get("auth-token")?.value || cookieStore.get("session")?.value;
+
+    if (!token) {
+      return NextResponse.json({ message: "No autorizado. Inicia sesión." }, { status: 401 });
+    }
+
+    // Buscamos el usuario en la BD (asumiendo que la cookie tiene el ID o un token válido)
+    const userResult: any = await query(
+      "SELECT id FROM users WHERE id = ? OR token = ?", 
+      [token, token]
+    );
+    const userId = (userResult.rows as any[])?.[0]?.id;
+
+    if (!userId) {
+      return NextResponse.json({ message: "Usuario no encontrado" }, { status: 401 });
+    }
+
+    // Consultamos la tabla 'pets' del usuario común
+    const petsResult: any = await query(
+      `SELECT id, name, species, breed, color, sex, microchip, photo_url, public_id, status, lost_report, created_at 
+       FROM pets WHERE user_id = ? ORDER BY created_at DESC`,
+      [userId]
+    );
+
+    return NextResponse.json({ success: true, pets: petsResult.rows || [] });
 
   } catch (error: any) {
     console.error("Error al obtener mascotas:", error);
@@ -63,51 +74,63 @@ export async function GET(request: Request) {
   }
 }
 
-// POST - Crear nueva mascota (Centro Clínico)
+// ==========================================
+// POST - Crear nueva mascota (Soporta ambos)
+// ==========================================
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log("=== BODY POST pets ===", body);
-    console.log("=== photoUrl recibido ===", body.photoUrl?.substring(0, 50));
+    const { clinicId } = body;
 
-    const {
-      clinicId, name, species, breed, gender, birthDate, weight,
-      ownerName, ownerPhone, ownerEmail, photoUrl
-    } = body;
+    // CASO 1: CENTRO CLÍNICO
+    if (clinicId) {
+      const { name, species, breed, gender, birthDate, weight, ownerName, ownerPhone, ownerEmail, photoUrl } = body;
+      if (!name || !species || !ownerName || !ownerPhone) {
+        return NextResponse.json({ message: "Faltan datos obligatorios" }, { status: 400 });
+      }
 
-    if (!clinicId || !name || !species || !ownerName || !ownerPhone) {
-      return NextResponse.json({ message: "Faltan datos obligatorios" }, { status: 400 });
+      const id = crypto.randomUUID();
+      await query(
+        `INSERT INTO clinic_patients
+         (id, clinic_id, name, species, breed, gender, birth_date, weight, photo_url, owner_name, owner_phone, owner_email, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+        [id, clinicId, name, species, breed || '', gender || '', birthDate || '', weight || null, photoUrl || '', ownerName, ownerPhone, ownerEmail || '']
+      );
+
+      return NextResponse.json({ success: true, message: "Mascota registrada exitosamente", petId: id });
+    }
+
+    // CASO 2: USUARIO COMÚN
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth-token")?.value || cookieStore.get("session")?.value;
+
+    if (!token) {
+      return NextResponse.json({ message: "No autorizado. Inicia sesión." }, { status: 401 });
+    }
+
+    const userResult: any = await query("SELECT id FROM users WHERE id = ? OR token = ?", [token, token]);
+    const userId = (userResult.rows as any[])?.[0]?.id;
+
+    if (!userId) {
+      return NextResponse.json({ message: "Usuario no encontrado" }, { status: 401 });
+    }
+
+    const { name, species, breed, color, sex, microchip, photo } = body;
+    if (!name || !species) {
+      return NextResponse.json({ message: "Nombre y especie son obligatorios" }, { status: 400 });
     }
 
     const id = crypto.randomUUID();
+    const publicId = crypto.randomUUID().split('-')[0].toUpperCase();
 
     await query(
-      `INSERT INTO clinic_patients
-       (id, clinic_id, name, species, breed, gender, birth_date, weight, photo_url, owner_name, owner_phone, owner_email, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-      [
-        id,
-        clinicId,
-        name,
-        species,
-        breed || '',
-        gender || '',
-        birthDate || '',
-        weight || null,
-        photoUrl || '',
-        ownerName,
-        ownerPhone,
-        ownerEmail || ''
-      ]
+      `INSERT INTO pets 
+       (id, user_id, name, species, breed, color, sex, microchip, photo_url, public_id, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'home', datetime('now'))`,
+      [id, userId, name, species, breed || null, color || null, sex || null, microchip || null, photo || null, publicId]
     );
 
-    console.log("=== Mascota creada con photoUrl ===", photoUrl ? "SÍ" : "NO");
-
-    return NextResponse.json({
-      success: true,
-      message: "Mascota registrada exitosamente",
-      petId: id
-    });
+    return NextResponse.json({ success: true, message: "Mascota creada", publicId });
 
   } catch (error: any) {
     console.error("Error al crear mascota:", error);
@@ -115,27 +138,55 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT - Actualizar mascota (Centro Clínico)
+// ==========================================
+// PUT - Actualizar mascota (Soporta ambos)
+// ==========================================
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { petId, clinicId, name, species, breed, gender, birthDate, weight, ownerName, ownerPhone, ownerEmail, photoUrl } = body;
+    const { clinicId, petId } = body;
 
-    if (!petId || !clinicId) {
-      return NextResponse.json({ message: "Faltan datos obligatorios" }, { status: 400 });
+    // CASO 1: CENTRO CLÍNICO
+    if (clinicId && petId) {
+      const { name, species, breed, gender, birthDate, weight, ownerName, ownerPhone, ownerEmail, photoUrl } = body;
+      await query(
+        `UPDATE clinic_patients
+         SET name = ?, species = ?, breed = ?, gender = ?, birth_date = ?, weight = ?,
+             photo_url = ?, owner_name = ?, owner_phone = ?, owner_email = ?, updated_at = datetime('now')
+         WHERE id = ? AND clinic_id = ?`,
+        [name, species, breed || '', gender || '', birthDate || '', weight || null, photoUrl || '', ownerName, ownerPhone, ownerEmail || '', petId, clinicId]
+      );
+      return NextResponse.json({ success: true, message: "Mascota actualizada" });
     }
 
+    // CASO 2: USUARIO COMÚN
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth-token")?.value || cookieStore.get("session")?.value;
+    
+    if (!token || !petId) {
+      return NextResponse.json({ message: "No autorizado o falta petId" }, { status: 401 });
+    }
+
+    const userResult: any = await query("SELECT id FROM users WHERE id = ? OR token = ?", [token, token]);
+    const userId = (userResult.rows as any[])?.[0]?.id;
+
+    if (!userId) {
+      return NextResponse.json({ message: "Usuario no encontrado" }, { status: 401 });
+    }
+
+    const { name, species, breed, color, sex, microchip, photo } = body;
+
     await query(
-      `UPDATE clinic_patients
-       SET name = ?, species = ?, breed = ?, gender = ?, birth_date = ?, weight = ?,
-           photo_url = ?, owner_name = ?, owner_phone = ?, owner_email = ?, updated_at = datetime('now')
-       WHERE id = ? AND clinic_id = ?`,
-      [name, species, breed || '', gender || '', birthDate || '', weight || null, photoUrl || '', ownerName, ownerPhone, ownerEmail || '', petId, clinicId]
+      `UPDATE pets
+       SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, photo_url = ?, updated_at = datetime('now')
+       WHERE id = ? AND user_id = ?`,
+      [name, species, breed || null, color || null, sex || null, microchip || null, photo || null, petId, userId]
     );
 
     return NextResponse.json({ success: true, message: "Mascota actualizada" });
+
   } catch (error: any) {
-    console.error("Error:", error);
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    console.error("Error al actualizar mascota:", error);
+    return NextResponse.json({ message: "Error: " + error.message }, { status: 500 });
   }
 }
