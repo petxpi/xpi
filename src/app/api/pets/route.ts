@@ -41,29 +41,18 @@ export async function GET(request: Request) {
     // CASO 2: USUARIO COMÚN / EXPLORAR (sin clinicId)
     // Obtenemos el userId de la cookie de autenticación
     const cookieStore = await cookies();
-    // ⚠️ IMPORTANTE: Ajusta "auth-token" al nombre real de tu cookie de sesión si es diferente (ej: "session", "token")
-    const token = cookieStore.get("auth-token")?.value || cookieStore.get("session")?.value;
+    const token = cookieStore.get("auth-token")?.value;
 
     if (!token) {
       return NextResponse.json({ message: "No autorizado. Inicia sesión." }, { status: 401 });
     }
 
-    // Buscamos el usuario en la BD (asumiendo que la cookie tiene el ID o un token válido)
-    const userResult: any = await query(
-      "SELECT id FROM users WHERE id = ? OR token = ?", 
-      [token, token]
-    );
-    const userId = (userResult.rows as any[])?.[0]?.id;
-
-    if (!userId) {
-      return NextResponse.json({ message: "Usuario no encontrado" }, { status: 401 });
-    }
-
     // Consultamos la tabla 'pets' del usuario común
+    // Asumimos que la cookie tiene el user_id directamente
     const petsResult: any = await query(
       `SELECT id, name, species, breed, color, sex, microchip, photo_url, public_id, status, lost_report, created_at 
        FROM pets WHERE user_id = ? ORDER BY created_at DESC`,
-      [userId]
+      [token]  // La cookie debería tener el user_id
     );
 
     return NextResponse.json({ success: true, pets: petsResult.rows || [] });
@@ -102,17 +91,10 @@ export async function POST(request: Request) {
 
     // CASO 2: USUARIO COMÚN
     const cookieStore = await cookies();
-    const token = cookieStore.get("auth-token")?.value || cookieStore.get("session")?.value;
+    const token = cookieStore.get("auth-token")?.value;
 
     if (!token) {
       return NextResponse.json({ message: "No autorizado. Inicia sesión." }, { status: 401 });
-    }
-
-    const userResult: any = await query("SELECT id FROM users WHERE id = ? OR token = ?", [token, token]);
-    const userId = (userResult.rows as any[])?.[0]?.id;
-
-    if (!userId) {
-      return NextResponse.json({ message: "Usuario no encontrado" }, { status: 401 });
     }
 
     const { name, species, breed, color, sex, microchip, photo } = body;
@@ -127,7 +109,7 @@ export async function POST(request: Request) {
       `INSERT INTO pets 
        (id, user_id, name, species, breed, color, sex, microchip, photo_url, public_id, status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'home', datetime('now'))`,
-      [id, userId, name, species, breed || null, color || null, sex || null, microchip || null, photo || null, publicId]
+      [id, token, name, species, breed || null, color || null, sex || null, microchip || null, photo || null, publicId]
     );
 
     return NextResponse.json({ success: true, message: "Mascota creada", publicId });
@@ -161,17 +143,10 @@ export async function PUT(request: Request) {
 
     // CASO 2: USUARIO COMÚN
     const cookieStore = await cookies();
-    const token = cookieStore.get("auth-token")?.value || cookieStore.get("session")?.value;
+    const token = cookieStore.get("auth-token")?.value;
     
     if (!token || !petId) {
       return NextResponse.json({ message: "No autorizado o falta petId" }, { status: 401 });
-    }
-
-    const userResult: any = await query("SELECT id FROM users WHERE id = ? OR token = ?", [token, token]);
-    const userId = (userResult.rows as any[])?.[0]?.id;
-
-    if (!userId) {
-      return NextResponse.json({ message: "Usuario no encontrado" }, { status: 401 });
     }
 
     const { name, species, breed, color, sex, microchip, photo } = body;
@@ -180,7 +155,7 @@ export async function PUT(request: Request) {
       `UPDATE pets
        SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, photo_url = ?, updated_at = datetime('now')
        WHERE id = ? AND user_id = ?`,
-      [name, species, breed || null, color || null, sex || null, microchip || null, photo || null, petId, userId]
+      [name, species, breed || null, color || null, sex || null, microchip || null, photo || null, petId, token]
     );
 
     return NextResponse.json({ success: true, message: "Mascota actualizada" });
