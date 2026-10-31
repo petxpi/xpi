@@ -16,6 +16,12 @@ export default function CentroClinicoDashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [clinicId, setClinicId] = useState("");
   const [loading, setLoading] = useState(true);
+  const [clinicColors, setClinicColors] = useState({
+    primary: "#7c3aed",
+    secondary: "#10b981",
+    name: "Centro Clínico",
+    logoUrl: "",
+  });
   const [stats, setStats] = useState({
     todayAppointments: 0,
     activePets: 0,
@@ -31,6 +37,13 @@ export default function CentroClinicoDashboard() {
       try {
         const data = JSON.parse(clinicData);
         setClinicId(data.id || data.clinicId || "");
+        // Cargar colores de la clínica
+        setClinicColors({
+          primary: data.primary_color || "#7c3aed",
+          secondary: data.secondary_color || "#10b981",
+          name: data.name || "Centro Clínico",
+          logoUrl: data.logo_url || "",
+        });
       } catch (e) {
         console.error("Error:", e);
       }
@@ -43,7 +56,26 @@ export default function CentroClinicoDashboard() {
       return;
     }
     fetchStats();
+    loadClinicColors();
   }, [clinicId]);
+
+  async function loadClinicColors() {
+    try {
+      const res = await fetch(`/api/clinics/${clinicId}`);
+      const data = await res.json();
+      if (data.success && data.clinic) {
+        const c = data.clinic;
+        setClinicColors({
+          primary: c.primary_color || "#7c3aed",
+          secondary: c.secondary_color || "#10b981",
+          name: c.name || "Centro Clínico",
+          logoUrl: c.logo_url || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error cargando colores:", error);
+    }
+  }
 
   async function fetchStats() {
     setLoading(true);
@@ -62,24 +94,26 @@ export default function CentroClinicoDashboard() {
   }
 
   const menuItems = [
-    { id: "dashboard", name: "Dashboard", icon: "📊", color: "purple", href: "/centro-clinico/dashboard" },
-    { id: "agenda", name: "Agenda", icon: "📅", color: "green", href: "/centro-clinico/citas" },
-    { id: "pacientes", name: "Pacientes", icon: "🐾", color: "purple", href: "/centro-clinico/pacientes" },
-    { id: "servicios", name: "Servicios", icon: "⚕️", color: "green", href: "/centro-clinico/servicios" },
-    { id: "personal", name: "Personal", icon: "👥", color: "purple", href: "/centro-clinico/personal" },
-    { id: "reportes", name: "Reportes", icon: "📈", color: "green", href: "/centro-clinico/reportes" },
+    { id: "dashboard", name: "Dashboard", icon: "📊", color: "primary", href: "/centro-clinico/dashboard" },
+    { id: "agenda", name: "Agenda", icon: "📅", color: "secondary", href: "/centro-clinico/citas" },
+    { id: "pacientes", name: "Pacientes", icon: "🐾", color: "primary", href: "/centro-clinico/pacientes" },
+    { id: "servicios", name: "Servicios", icon: "⚕️", color: "secondary", href: "/centro-clinico/servicios" },
+    { id: "personal", name: "Personal", icon: "👥", color: "primary", href: "/centro-clinico/personal" },
+    { id: "reportes", name: "Reportes", icon: "📈", color: "secondary", href: "/centro-clinico/reportes" },
   ];
 
   const statsCards = [
-    { label: "Citas Hoy", value: stats.todayAppointments, color: "purple", icon: "📅" },
-    { label: "Pacientes Activos", value: stats.activePets, color: "green", icon: "🐾" },
-    { label: "Servicios", value: stats.services, color: "purple", icon: "⚕️" },
-    { label: "Personal", value: stats.staff, color: "green", icon: "👥" },
+    { label: "Citas Hoy", value: stats.todayAppointments, color: "primary", icon: "📅" },
+    { label: "Pacientes Activos", value: stats.activePets, color: "secondary", icon: "🐾" },
+    { label: "Servicios", value: stats.services, color: "primary", icon: "⚕️" },
+    { label: "Personal", value: stats.staff, color: "secondary", icon: "👥" },
   ];
 
   const getColor = (color: string) => {
-    if (color === "green") return { main: "#10b981", light: "#d1fae5", text: "#065f46" };
-    return { main: "#7c3aed", light: "#f3e8ff", text: "#6d28d9" };
+    if (color === "secondary") {
+      return { main: clinicColors.secondary, light: "#d1fae5", text: "#065f46" };
+    }
+    return { main: clinicColors.primary, light: "#f3e8ff", text: "#6d28d9" };
   };
 
   const getStatusStyle = (status: string) => {
@@ -111,21 +145,29 @@ export default function CentroClinicoDashboard() {
       }}>
         <div style={{ padding: "0 20px 20px", borderBottom: "1px solid #e5e7eb" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div style={{
-              width: "40px",
-              height: "40px",
-              background: "#7c3aed",
-              borderRadius: "10px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "20px",
-            }}>
-              🏥
-            </div>
+            {clinicColors.logoUrl ? (
+              <img
+                src={clinicColors.logoUrl}
+                alt="Logo"
+                style={{ width: "40px", height: "40px", borderRadius: "10px", objectFit: "cover" }}
+              />
+            ) : (
+              <div style={{
+                width: "40px",
+                height: "40px",
+                background: clinicColors.primary,
+                borderRadius: "10px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "20px",
+              }}>
+                🏥
+              </div>
+            )}
             <div>
               <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "bold", color: "#1f2937" }}>
-                Centro Clínico
+                {clinicColors.name}
               </h2>
               <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>
                 Clínica Veterinaria
@@ -241,7 +283,7 @@ export default function CentroClinicoDashboard() {
           </h2>
 
           {loading ? (
-            <p style={{ textAlign: "center", color: "#7c3aed", padding: "40px" }}>Cargando...</p>
+            <p style={{ textAlign: "center", color: clinicColors.primary, padding: "40px" }}>Cargando...</p>
           ) : todayAppointments.length === 0 ? (
             <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
               <div style={{ fontSize: "48px", marginBottom: "16px" }}>📅</div>
@@ -294,14 +336,14 @@ export default function CentroClinicoDashboard() {
           <Link
             href="/centro-clinico/configuracion"
             style={{
-              background: "#10b981",
+              background: clinicColors.secondary,
               color: "white",
               padding: "20px",
               borderRadius: "12px",
               textDecoration: "none",
               textAlign: "center",
               fontWeight: "600",
-              boxShadow: "0 4px 6px rgba(16, 185, 129, 0.3)",
+              boxShadow: `0 4px 6px ${clinicColors.secondary}40`,
             }}
           >
             <div style={{ fontSize: "24px", marginBottom: "8px" }}>⚙️</div>
@@ -311,14 +353,14 @@ export default function CentroClinicoDashboard() {
           <Link
             href="/centro-clinico/servicios"
             style={{
-              background: "#7c3aed",
+              background: clinicColors.primary,
               color: "white",
               padding: "20px",
               borderRadius: "12px",
               textDecoration: "none",
               textAlign: "center",
               fontWeight: "600",
-              boxShadow: "0 4px 6px rgba(124, 58, 237, 0.3)",
+              boxShadow: `0 4px 6px ${clinicColors.primary}40`,
             }}
           >
             <div style={{ fontSize: "24px", marginBottom: "8px" }}>⚕️</div>
@@ -328,14 +370,14 @@ export default function CentroClinicoDashboard() {
           <Link
             href="/centro-clinico/personal"
             style={{
-              background: "#10b981",
+              background: clinicColors.secondary,
               color: "white",
               padding: "20px",
               borderRadius: "12px",
               textDecoration: "none",
               textAlign: "center",
               fontWeight: "600",
-              boxShadow: "0 4px 6px rgba(16, 185, 129, 0.3)",
+              boxShadow: `0 4px 6px ${clinicColors.secondary}40`,
             }}
           >
             <div style={{ fontSize: "24px", marginBottom: "8px" }}>👥</div>
@@ -345,14 +387,14 @@ export default function CentroClinicoDashboard() {
           <Link
             href="/centro-clinico/citas/nueva"
             style={{
-              background: "#7c3aed",
+              background: clinicColors.primary,
               color: "white",
               padding: "20px",
               borderRadius: "12px",
               textDecoration: "none",
               textAlign: "center",
               fontWeight: "600",
-              boxShadow: "0 4px 6px rgba(124, 58, 237, 0.3)",
+              boxShadow: `0 4px 6px ${clinicColors.primary}40`,
             }}
           >
             <div style={{ fontSize: "24px", marginBottom: "8px" }}>📅</div>
