@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { cookies } from "next/headers";
+import { jwtVerify } from "jose";
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.BETTER_AUTH_SECRET || "secret"
+);
 
 // ==========================================
-// GET - Obtener mascotas (Soporta Centro Clínico y Usuario Común)
+// GET - Obtener mascotas (Soporta AMBOS: Centro Clínico y Usuario Común)
 // ==========================================
 export async function GET(request: Request) {
   try {
@@ -11,9 +16,12 @@ export async function GET(request: Request) {
     const clinicId = searchParams.get("clinicId");
     const petId = searchParams.get("petId");
 
+    // ==========================================
     // CASO 1: CENTRO CLÍNICO (tiene clinicId)
+    // ==========================================
     if (clinicId) {
       if (petId) {
+        // Obtener detalle de una mascota específica
         const petResult: any = await query(
           `SELECT * FROM clinic_patients WHERE id = ? AND clinic_id = ?`,
           [petId, clinicId]
@@ -30,6 +38,7 @@ export async function GET(request: Request) {
         });
       }
 
+      // Listar todas las mascotas de la clínica
       const result: any = await query(
         `SELECT id, name, species, breed, gender, owner_name, owner_phone, photo_url, created_at
          FROM clinic_patients WHERE clinic_id = ? ORDER BY created_at DESC`,
@@ -38,8 +47,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, pets: result.rows || [] });
     }
 
-    // CASO 2: USUARIO COMÚN / EXPLORAR (sin clinicId)
-    // Obtenemos el userId de la cookie de autenticación
+    // ==========================================
+    // CASO 2: USUARIO COMÚN (sin clinicId)
+    // ==========================================
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token")?.value;
 
@@ -47,12 +57,25 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: "No autorizado. Inicia sesión." }, { status: 401 });
     }
 
-    // Consultamos la tabla 'pets' del usuario común
-    // Asumimos que la cookie tiene el user_id directamente
+    // Decodificar JWT para obtener userId
+    let userId: string;
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      userId = payload.userId as string;
+    } catch (err) {
+      console.error("Error al verificar token:", err);
+      return NextResponse.json({ message: "Token inválido o expirado" }, { status: 401 });
+    }
+
+    if (!userId) {
+      return NextResponse.json({ message: "Usuario no encontrado en el token" }, { status: 401 });
+    }
+
+    // Consultar tabla pets del usuario común
     const petsResult: any = await query(
       `SELECT id, name, species, breed, color, sex, microchip, photo_url, public_id, status, lost_report, created_at 
        FROM pets WHERE user_id = ? ORDER BY created_at DESC`,
-      [token]  // La cookie debería tener el user_id
+      [userId]
     );
 
     return NextResponse.json({ success: true, pets: petsResult.rows || [] });
@@ -64,14 +87,16 @@ export async function GET(request: Request) {
 }
 
 // ==========================================
-// POST - Crear nueva mascota (Soporta ambos)
+// POST - Crear mascota (Soporta AMBOS)
 // ==========================================
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { clinicId } = body;
 
+    // ==========================================
     // CASO 1: CENTRO CLÍNICO
+    // ==========================================
     if (clinicId) {
       const { name, species, breed, gender, birthDate, weight, ownerName, ownerPhone, ownerEmail, photoUrl } = body;
       if (!name || !species || !ownerName || !ownerPhone) {
@@ -89,12 +114,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: "Mascota registrada exitosamente", petId: id });
     }
 
+    // ==========================================
     // CASO 2: USUARIO COMÚN
+    // ==========================================
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token")?.value;
 
     if (!token) {
       return NextResponse.json({ message: "No autorizado. Inicia sesión." }, { status: 401 });
+    }
+
+    let userId: string;
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      userId = payload.userId as string;
+    } catch (err) {
+      return NextResponse.json({ message: "Token inválido o expirado" }, { status: 401 });
     }
 
     const { name, species, breed, color, sex, microchip, photo } = body;
@@ -109,7 +144,7 @@ export async function POST(request: Request) {
       `INSERT INTO pets 
        (id, user_id, name, species, breed, color, sex, microchip, photo_url, public_id, status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'home', datetime('now'))`,
-      [id, token, name, species, breed || null, color || null, sex || null, microchip || null, photo || null, publicId]
+      [id, userId, name, species, breed || null, color || null, sex || null, microchip || null, photo || null, publicId]
     );
 
     return NextResponse.json({ success: true, message: "Mascota creada", publicId });
@@ -121,14 +156,16 @@ export async function POST(request: Request) {
 }
 
 // ==========================================
-// PUT - Actualizar mascota (Soporta ambos)
+// PUT - Actualizar mascota (Soporta AMBOS)
 // ==========================================
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
     const { clinicId, petId } = body;
 
+    // ==========================================
     // CASO 1: CENTRO CLÍNICO
+    // ==========================================
     if (clinicId && petId) {
       const { name, species, breed, gender, birthDate, weight, ownerName, ownerPhone, ownerEmail, photoUrl } = body;
       await query(
@@ -141,12 +178,22 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: true, message: "Mascota actualizada" });
     }
 
+    // ==========================================
     // CASO 2: USUARIO COMÚN
+    // ==========================================
     const cookieStore = await cookies();
     const token = cookieStore.get("auth-token")?.value;
     
     if (!token || !petId) {
       return NextResponse.json({ message: "No autorizado o falta petId" }, { status: 401 });
+    }
+
+    let userId: string;
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      userId = payload.userId as string;
+    } catch (err) {
+      return NextResponse.json({ message: "Token inválido o expirado" }, { status: 401 });
     }
 
     const { name, species, breed, color, sex, microchip, photo } = body;
@@ -155,13 +202,57 @@ export async function PUT(request: Request) {
       `UPDATE pets
        SET name = ?, species = ?, breed = ?, color = ?, sex = ?, microchip = ?, photo_url = ?, updated_at = datetime('now')
        WHERE id = ? AND user_id = ?`,
-      [name, species, breed || null, color || null, sex || null, microchip || null, photo || null, petId, token]
+      [name, species, breed || null, color || null, sex || null, microchip || null, photo || null, petId, userId]
     );
 
     return NextResponse.json({ success: true, message: "Mascota actualizada" });
 
   } catch (error: any) {
     console.error("Error al actualizar mascota:", error);
+    return NextResponse.json({ message: "Error: " + error.message }, { status: 500 });
+  }
+}
+
+// ==========================================
+// DELETE - Eliminar mascota (Soporta AMBOS)
+// ==========================================
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const petId = searchParams.get("petId");
+    const clinicId = searchParams.get("clinicId");
+
+    // ==========================================
+    // CASO 1: CENTRO CLÍNICO
+    // ==========================================
+    if (clinicId && petId) {
+      await query(`DELETE FROM clinic_patients WHERE id = ? AND clinic_id = ?`, [petId, clinicId]);
+      return NextResponse.json({ success: true, message: "Mascota eliminada" });
+    }
+
+    // ==========================================
+    // CASO 2: USUARIO COMÚN
+    // ==========================================
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth-token")?.value;
+    
+    if (!token || !petId) {
+      return NextResponse.json({ message: "No autorizado o falta petId" }, { status: 401 });
+    }
+
+    let userId: string;
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      userId = payload.userId as string;
+    } catch (err) {
+      return NextResponse.json({ message: "Token inválido o expirado" }, { status: 401 });
+    }
+
+    await query(`DELETE FROM pets WHERE id = ? AND user_id = ?`, [petId, userId]);
+    return NextResponse.json({ success: true, message: "Mascota eliminada" });
+
+  } catch (error: any) {
+    console.error("Error al eliminar mascota:", error);
     return NextResponse.json({ message: "Error: " + error.message }, { status: 500 });
   }
 }
