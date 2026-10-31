@@ -38,10 +38,15 @@ export default function CentroClinicoLogin() {
         throw new Error(data.message || "Credenciales inválidas");
       }
 
-      localStorage.setItem("clinicToken", data.token);
+      localStorage.setItem("clinicToken", data.token || "dummy");
       localStorage.setItem("clinicData", JSON.stringify(data.clinic));
 
-      router.push("/centro-clinico/dashboard");
+      // Redirigir a la página pública de la clínica si viene en la respuesta, sino al dashboard
+      if (data.redirect) {
+        router.push(data.redirect);
+      } else {
+        router.push("/centro-clinico/dashboard");
+      }
     } catch (err: any) {
       setError(err.message || "Error al iniciar sesión");
       setLoading(false);
@@ -53,7 +58,7 @@ export default function CentroClinicoLogin() {
   }
 
   return (
-    <div 
+    <div
       style={{
         minHeight: "100vh",
         display: "flex",
@@ -67,7 +72,7 @@ export default function CentroClinicoLogin() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <div 
+      <div
         style={{
           position: "relative",
           zIndex: 10,
@@ -83,7 +88,7 @@ export default function CentroClinicoLogin() {
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
         }}
       >
-        
+
         <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
           <div style={{
             width: "80px",
@@ -94,7 +99,7 @@ export default function CentroClinicoLogin() {
             alignItems: "center",
             justifyContent: "center",
             fontSize: "40px",
-          }}>🏥</div>
+          }}></div>
         </div>
 
         <h1 style={{
@@ -133,7 +138,7 @@ export default function CentroClinicoLogin() {
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          
+
           <div style={{
             background: "rgba(255, 255, 255, 0.1)",
             backdropFilter: "blur(8px)",
