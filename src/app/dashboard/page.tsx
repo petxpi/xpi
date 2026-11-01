@@ -934,7 +934,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-purple-600">XpiPet Dashboard</h1>
           <div className="flex items-center gap-4">
             <Link href="/dashboard/reports" className="text-sm text-blue-600 hover:text-blue-800 font-medium">Reportes</Link>
-            <Link href="/administrador/tracking" className="text-sm text-red-600 hover:text-red-800 font-medium">Administrador</Link> <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">Contacto Publico</Link>
+            <Link href="/admin/login" className="text-sm text-red-600 hover:text-red-800 font-medium">Administrador</Link> <Link href="/profile/contact-settings" className="text-sm text-teal-600 hover:text-teal-800 font-medium">Contacto Publico</Link>
             <Link href="/profile" className="text-sm text-purple-600 hover:text-purple-800 font-medium">Mi Perfil</Link>
             <button onClick={handleLogout} className="text-sm text-gray-600 hover:text-red-600">Cerrar Sesion</button>
           </div>
