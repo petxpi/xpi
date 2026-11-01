@@ -69,7 +69,7 @@ export default function Home() {
           
           {/* 3. Administrador -> Cyan -> Tracking GPS */}
           <Link
-            href="/administrador/tracking"
+            href="/admin/login"
             className="block w-full px-8 py-3 rounded-full border-2 border-cyan-400 text-white font-semibold text-lg text-center hover:bg-cyan-400 hover:text-gray-900 transition-all shadow-lg"
           >
             Administrador
