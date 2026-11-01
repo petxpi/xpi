@@ -46,10 +46,12 @@ export default function PublicClinicByIdPage() {
   const [loading, setLoading] = useState(true);
   const [clinic, setClinic] = useState<Clinic | null>(null);
   const [services, setServices] = useState<Service[]>([]);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     if (clinicId) {
       loadClinic(clinicId);
+      checkIfOwner();
     }
   }, [clinicId]);
 
@@ -68,6 +70,18 @@ export default function PublicClinicByIdPage() {
       console.error("Error cargando clínica:", error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function checkIfOwner() {
+    try {
+      const res = await fetch(`/api/clinics/${clinicId}/check-owner`, {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      setIsOwner(data.isOwner || false);
+    } catch (error) {
+      console.error("Error verificando dueño:", error);
     }
   }
 
@@ -109,6 +123,7 @@ export default function PublicClinicByIdPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb" }}>
+      {/* Banner */}
       <div style={{ position: "relative", height: "300px", background: clinic.banner_url ? `url(${clinic.banner_url}) center/cover` : clinic.primary_color }}>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7))" }} />
         <div style={{ position: "absolute", bottom: "32px", left: "32px", right: "32px", maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "flex-end", gap: "24px" }}>
@@ -123,6 +138,33 @@ export default function PublicClinicByIdPage() {
         </div>
       </div>
 
+      {/* BOTÓN SOLO PARA EL DUEÑO DE LA CLÍNICA */}
+      {isOwner && (
+        <div style={{ background: "#f3f4f6", padding: "16px", textAlign: "center", borderBottom: "1px solid #e5e7eb" }}>
+          <Link
+            href="/centro-clinico/dashboard"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "10px 20px",
+              background: "#1f2937",
+              color: "white",
+              textDecoration: "none",
+              borderRadius: "8px",
+              fontWeight: "bold",
+              fontSize: "14px",
+            }}
+          >
+            ⚙️ Ir a mi Dashboard de Administración
+          </Link>
+          <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "8px", margin: "8px 0 0 0" }}>
+            Solo visible para el administrador de la clínica
+          </p>
+        </div>
+      )}
+
+      {/* Contenido */}
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "32px" }}>
         {clinic.description && (
           <div style={{ background: "white", borderRadius: "16px", padding: "32px", marginBottom: "24px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
@@ -174,7 +216,7 @@ export default function PublicClinicByIdPage() {
             href={`/centro-clinico/citas/nueva?clinic=${clinic.id}`}
             style={{ display: "inline-block", padding: "20px 48px", background: clinic.primary_color, color: "white", textDecoration: "none", borderRadius: "12px", fontSize: "18px", fontWeight: "bold", boxShadow: `0 8px 16px ${clinic.primary_color}40` }}
           >
-             Agendar Cita Ahora
+            📅 Agendar Cita Ahora
           </Link>
         </div>
       </div>
