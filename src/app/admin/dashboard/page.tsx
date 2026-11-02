@@ -146,12 +146,12 @@ export default function AdminDashboard() {
             <div style={{ fontSize: "12px", color: "#22c55e", fontWeight: "bold" }}>✅ FUNCIONAL</div>
           </Link>
 
-          <div style={{ background: "rgba(239, 68, 68, 0.1)", backdropFilter: "blur(10px)", borderRadius: "16px", padding: "32px", border: "2px solid rgba(239, 68, 68, 0.3)", opacity: 0.7 }}>
+          <Link href="/admin/admins" style={{ background: "rgba(239, 68, 68, 0.1)", backdropFilter: "blur(10px)", borderRadius: "16px", padding: "32px", border: "2px solid rgba(239, 68, 68, 0.3)", textDecoration: "none", color: "white", transition: "all 0.3s", cursor: "pointer" }}>
             <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚙️</div>
             <h3 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "8px", margin: "0 0 8px 0" }}>Gestión de Admins</h3>
             <p style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.6)", margin: "0 0 16px 0" }}>Crear y gestionar otros super administradores</p>
-            <div style={{ fontSize: "12px", color: "rgba(255, 255, 255, 0.4)", fontStyle: "italic" }}>🔧 Próximamente</div>
-          </div>
+            <div style={{ fontSize: "12px", color: "#22c55e", fontWeight: "bold" }}>✅ FUNCIONAL</div>
+          </Link>
         </div>
       </main>
     </div>
