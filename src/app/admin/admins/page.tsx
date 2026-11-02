@@ -146,7 +146,6 @@ export default function AdminAdmins() {
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "white" }}>
-      {/* Header */}
       <header style={{ background: "rgba(0, 0, 0, 0.3)", backdropFilter: "blur(10px)", padding: "20px 32px", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>
         <div style={{ maxWidth: "1400px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
@@ -166,9 +165,7 @@ export default function AdminAdmins() {
         </div>
       </header>
 
-      {/* Contenido */}
       <main style={{ maxWidth: "1400px", margin: "0 auto", padding: "32px" }}>
-        {/* Botón crear nuevo admin */}
         <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <button
             onClick={() => { setShowCreateModal(true); setMessage(""); }}
@@ -191,7 +188,6 @@ export default function AdminAdmins() {
           </button>
         </div>
 
-        {/* Mensaje */}
         {message && (
           <div style={{
             background: message.includes("✅") ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)",
@@ -206,7 +202,6 @@ export default function AdminAdmins() {
           </div>
         )}
 
-        {/* Lista de admins */}
         <div style={{ display: "grid", gap: "20px" }}>
           {admins.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255, 255, 255, 0.5)" }}>
@@ -226,7 +221,6 @@ export default function AdminAdmins() {
                 gap: "24px",
                 alignItems: "center",
               }}>
-                {/* Avatar */}
                 <div style={{
                   width: "60px",
                   height: "60px",
@@ -241,7 +235,6 @@ export default function AdminAdmins() {
                   {a.name?.charAt(0).toUpperCase() || "A"}
                 </div>
 
-                {/* Info */}
                 <div>
                   <h3 style={{ fontSize: "20px", fontWeight: "bold", margin: "0 0 8px 0" }}>{a.name}</h3>
                   <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", fontSize: "14px", color: "rgba(255, 255, 255, 0.7)" }}>
@@ -251,7 +244,6 @@ export default function AdminAdmins() {
                   </div>
                 </div>
 
-                {/* Acciones */}
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                   {a.active === 1 ? (
                     <span style={{
@@ -298,7 +290,6 @@ export default function AdminAdmins() {
         </div>
       </main>
 
-      {/* Modal Crear Admin */}
       {showCreateModal && (
         <div style={{
           position: "fixed",
