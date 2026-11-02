@@ -68,7 +68,7 @@ export default function ProfilePage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(editData),
+        body: JSON.stringify({ userId: user?.id, ...editData }),
       });
 
       const data = await response.json();
@@ -117,6 +117,7 @@ export default function ProfilePage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          userId: user?.id,
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
         }),
@@ -293,7 +294,7 @@ export default function ProfilePage() {
                     fontSize: "16px",
                   }}
                 >
-                  {updating ? "Guardando..." : " Guardar Cambios"}
+                  {updating ? "Guardando..." : "✅ Guardar Cambios"}
                 </button>
                 <button
                   onClick={() => { setIsEditing(false); setEditData({ name: user?.name || "", phone: user?.phone || "", whatsapp: user?.whatsapp || "" }); }}
@@ -316,7 +317,7 @@ export default function ProfilePage() {
             <div>
               <div style={{ display: "grid", gap: "16px", marginBottom: "24px" }}>
                 <div>
-                  <div style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.6)", marginBottom: "4px" }}> Nombre</div>
+                  <div style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.6)", marginBottom: "4px" }}>👤 Nombre</div>
                   <div style={{ fontSize: "18px", fontWeight: "bold" }}>{user?.name || "Sin nombre"}</div>
                 </div>
                 <div>
@@ -628,7 +629,7 @@ export default function ProfilePage() {
                 transition: "all 0.3s",
               }}
             >
-              <span style={{ fontSize: "24px" }}></span>
+              <span style={{ fontSize: "24px" }}>🏡</span>
               <span style={{ fontWeight: "bold" }}>Página principal</span>
             </Link>
           </div>

@@ -5,22 +5,11 @@ import bcrypt from "bcryptjs";
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { name, phone, whatsapp, currentPassword, newPassword } = body;
+    const { userId, name, phone, whatsapp, currentPassword, newPassword } = body;
 
-    // Obtener el ID del usuario de la cookie (simplificado)
-    const authResponse = await fetch("http://localhost:3000/api/auth/me", {
-      headers: request.headers,
-    });
-    
-    if (!authResponse.ok) {
-      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
-    }
-
-    const authData = await authResponse.json();
-    const userId = authData.user?.id;
-
+    // Validar que se envíe el userId
     if (!userId) {
-      return NextResponse.json({ message: "Usuario no encontrado" }, { status: 404 });
+      return NextResponse.json({ message: "userId es requerido" }, { status: 400 });
     }
 
     // Si quiere cambiar contraseña, verificar la actual
