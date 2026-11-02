@@ -12,6 +12,10 @@ export default function AdminDashboard() {
     pets: 0,
     clinics: 0,
     appointments: 0,
+    lostPets: 0,
+    pendingClinics: 0,
+    todayAppointments: 0,
+    todayUsers: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -103,6 +107,7 @@ export default function AdminDashboard() {
       </header>
 
       <main style={{ maxWidth: "1400px", margin: "0 auto", padding: "32px" }}>
+        {/* Estadísticas Globales */}
         <h2 style={{ fontSize: "22px", fontWeight: "bold", marginBottom: "24px" }}>📊 Estadísticas Globales</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "24px", marginBottom: "40px" }}>
           <div style={{ background: "rgba(59, 130, 246, 0.1)", backdropFilter: "blur(10px)", borderRadius: "16px", padding: "24px", border: "1px solid rgba(59, 130, 246, 0.3)" }}>
@@ -123,6 +128,50 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Estadísticas en Tiempo Real */}
+        <h2 style={{ fontSize: "22px", fontWeight: "bold", marginBottom: "24px" }}>⚡ Actividad en Tiempo Real</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "24px", marginBottom: "40px" }}>
+          <Link href="/admin/users" style={{ 
+            background: stats.lostPets > 0 ? "rgba(239, 68, 68, 0.15)" : "rgba(239, 68, 68, 0.1)", 
+            backdropFilter: "blur(10px)", 
+            borderRadius: "16px", 
+            padding: "24px", 
+            border: stats.lostPets > 0 ? "2px solid rgba(239, 68, 68, 0.5)" : "1px solid rgba(239, 68, 68, 0.3)",
+            textDecoration: "none",
+            color: "white",
+          }}>
+            <div style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.6)", marginBottom: "8px" }}>🚨 Mascotas Perdidas</div>
+            <div style={{ fontSize: "36px", fontWeight: "bold", color: stats.lostPets > 0 ? "#ef4444" : "white" }}>{stats.lostPets}</div>
+            {stats.lostPets > 0 && (
+              <div style={{ fontSize: "12px", color: "#ef4444", marginTop: "8px", fontWeight: "bold" }}>⚠️ Requieren atención</div>
+            )}
+          </Link>
+          <Link href="/admin/clinics" style={{ 
+            background: stats.pendingClinics > 0 ? "rgba(245, 158, 11, 0.15)" : "rgba(245, 158, 11, 0.1)", 
+            backdropFilter: "blur(10px)", 
+            borderRadius: "16px", 
+            padding: "24px", 
+            border: stats.pendingClinics > 0 ? "2px solid rgba(245, 158, 11, 0.5)" : "1px solid rgba(245, 158, 11, 0.3)",
+            textDecoration: "none",
+            color: "white",
+          }}>
+            <div style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.6)", marginBottom: "8px" }}>⏳ Clínicas Pendientes</div>
+            <div style={{ fontSize: "36px", fontWeight: "bold", color: stats.pendingClinics > 0 ? "#f59e0b" : "white" }}>{stats.pendingClinics}</div>
+            {stats.pendingClinics > 0 && (
+              <div style={{ fontSize: "12px", color: "#f59e0b", marginTop: "8px", fontWeight: "bold" }}>⚠️ Por aprobar</div>
+            )}
+          </Link>
+          <div style={{ background: "rgba(16, 185, 129, 0.1)", backdropFilter: "blur(10px)", borderRadius: "16px", padding: "24px", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
+            <div style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.6)", marginBottom: "8px" }}>📅 Citas Hoy</div>
+            <div style={{ fontSize: "36px", fontWeight: "bold" }}>{stats.todayAppointments}</div>
+          </div>
+          <div style={{ background: "rgba(59, 130, 246, 0.1)", backdropFilter: "blur(10px)", borderRadius: "16px", padding: "24px", border: "1px solid rgba(59, 130, 246, 0.3)" }}>
+            <div style={{ fontSize: "14px", color: "rgba(255, 255, 255, 0.6)", marginBottom: "8px" }}>👥 Usuarios Nuevos Hoy</div>
+            <div style={{ fontSize: "36px", fontWeight: "bold" }}>{stats.todayUsers}</div>
+          </div>
+        </div>
+
+        {/* Módulos de Gestión */}
         <h2 style={{ fontSize: "22px", fontWeight: "bold", marginBottom: "24px" }}>🛠️ Módulos de Gestión</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
           <Link href="/administrador/tracking" style={{ background: "rgba(139, 92, 246, 0.1)", backdropFilter: "blur(10px)", borderRadius: "16px", padding: "32px", border: "2px solid rgba(139, 92, 246, 0.3)", textDecoration: "none", color: "white", transition: "all 0.3s", cursor: "pointer" }}>
